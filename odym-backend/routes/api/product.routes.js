@@ -11,14 +11,20 @@ async function productRoutes(fastify, options) {
   fastify.post('/', async (request, reply) => {
     console.log('POST /api/products called with body:', request.body);
     try {
-      // Upload images to imgBB and replace with URLs before saving
+      // Process images: upload base64 images to imgBB, keep existing URLs as is
       if (request.body.images && Array.isArray(request.body.images)) {
-        const uploadedUrls = [];
-        for (const base64Image of request.body.images) {
-          const url = await uploadImage(base64Image);
-          uploadedUrls.push(url);
+        const processedUrls = [];
+        for (const image of request.body.images) {
+          if (typeof image === 'string' && (image.startsWith('http://') || image.startsWith('https://'))) {
+            // Existing URL, keep as is
+            processedUrls.push(image);
+          } else {
+            // Assume base64 image, upload to imgBB
+            const url = await uploadImage(image);
+            processedUrls.push(url);
+          }
         }
-        request.body.images = uploadedUrls;
+        request.body.images = processedUrls;
       }
       const product = await createProduct(request.body);
       reply.status(201).send(product);

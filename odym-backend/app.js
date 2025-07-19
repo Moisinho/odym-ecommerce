@@ -14,9 +14,10 @@ import clientesRoutes from './src/routes/clientes.routes.js';
 
 config(); // Load environment variables from .env file
 
-import { config } from 'dotenv';
+// Removed duplicate import and call of config()
+// import { config } from 'dotenv';
 
-config();
+// config();
 
 const PORT = process.env.PORT;
 const MONGO_URI = 'mongodb://root:example@localhost:27017/';

@@ -2,11 +2,11 @@ import Product from '../models/Product.js';
 import { Category } from '../models/Category.js';
 
 // Crear producto (con categoría)
-export const createProduct = async ({ name, description, price, categoryId }) => {
+export const createProduct = async ({ name, description, price, categoryId, images }) => {
   const category = await Category.findById(categoryId);
   if (!category) throw new Error('Categoría no existe');
 
-  const product = new Product({ name, description, price, category: categoryId });
+  const product = new Product({ name, description, price, category: categoryId, images });
   return await product.save();
 };
 
