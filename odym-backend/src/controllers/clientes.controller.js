@@ -1,4 +1,4 @@
-import Cliente from '../models/Cliente.js';
+import Cliente from '../../models/Cliente.js';
 
 export async function loginCliente(request, reply) {
   const { correo, contrasena } = request.body;
