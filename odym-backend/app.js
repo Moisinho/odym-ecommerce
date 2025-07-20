@@ -10,20 +10,14 @@ import paymentRoutes from './routes/api/payment.routes.js';
 import productRoutes from './routes/api/product.routes.js';
 import checkoutWebRoutes from './routes/web/checkout.routes.js';
 import homeRoutes from './routes/web/home.routes.js';
-import clientesRoutes from './src/routes/clientes.routes.js';
+import customerRoutes from './routes/api/customer.routes.js';
 
 import cors from '@fastify/cors';
 
 config(); // Load environment variables from .env file
 
-// Removed duplicate import and call of config()
-// import { config } from 'dotenv';
-
-// config();
-
 const PORT = process.env.PORT;
 const MONGO_URI = 'mongodb://root:example@localhost:27017/';
-
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,12 +26,10 @@ import stripe from './services/stripe.service.js';
 
 const app = Fastify({ logger: true });
 
-// Register CORS plugin to allow cross-origin requests
 // Register CORS plugin with proper configuration
 app.register(cors, {
-  origin: true, // Permite el origen actual (mejor que '*' para desarrollo)
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']// Añade PUT aquí
-  
+  origin: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
 });
 
 // Register content type parser for JSON
@@ -55,7 +47,7 @@ app.addContentTypeParser('application/json', { parseAs: 'string' }, function (re
 app.decorate('stripe', stripe);
 
 // Register API routes
-app.register(clientesRoutes, { prefix: '/api/clientes' });
+app.register(customerRoutes, { prefix: '/api/customers' });
 app.register(productRoutes, { prefix: '/api/products' });
 app.register(categoryRoutes, { prefix: '/api/categories' });
 

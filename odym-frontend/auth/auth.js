@@ -1,239 +1,304 @@
-// Auth module
-const Auth = (() => {
-    // Estado de autenticación
-    let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
-    
-    // Elementos del DOM
-    const elements = {
-        authModal: document.getElementById('authModal'),
-        loginForm: document.getElementById('loginForm'),
-        registerForm: document.getElementById('registerForm'),
-        authModalTitle: document.getElementById('authModalTitle'),
-        loginTab: document.getElementById('loginTab'),
-        registerTab: document.getElementById('registerTab'),
-        userButton: document.querySelector('.user-auth-button')
-    };
-    
-    // Inicializar
-    function init() {
-        bindEvents();
-        updateUI();
+(() => {
+  const Auth = (() => {
+    const htmlElements = {
+      // Registration elements
+      step1Form: document.querySelector("#step-1"),
+      step2Form: document.querySelector("#step-2"),
+      nextBtn: document.querySelector("#next-btn"),
+      prevBtn: document.querySelector("#prev-btn"),
+      formTitle: document.querySelector("#form-title"),
+      fullNameInput: document.querySelector("#nombre"),
+      usernameInput: document.querySelector("#usuario"),
+      emailInput: document.querySelector("#correo"),
+      passwordInput: document.querySelector("#contrasena"),
+      phoneInput: document.querySelector("#telefono"),
+      addressInput: document.querySelector("#direccion"),
+      // Error messages
+      fullNameError: document.querySelector("#nombre-error"),
+      usernameError: document.querySelector("#usuario-error"),
+      emailError: document.querySelector("#correo-error"),
+      passwordError: document.querySelector("#contrasena-error"),
+      phoneError: document.querySelector("#telefono-error"),
+      addressError: document.querySelector("#direccion-error"),
+      // Login elements
+      loginForm: document.querySelector("#login-form"),
+      loginEmailInput: document.querySelector("#login-email"),
+      loginPasswordInput: document.querySelector("#login-password"),
+      loginButton: document.querySelector("#login-button")
     }
-    
-    // Vincular eventos
-    function bindEvents() {
-        // Tabs
-        if (elements.loginTab) {
-            elements.loginTab.addEventListener('click', showLoginForm);
+
+    const handlers = {
+      handleStep1: async (e) => {
+        e.preventDefault();
+        methods.clearErrors();
+        const formData = methods.getStep1Data();
+        if (methods.validateStep1(formData)) {
+          methods.showStep2();
         }
-        if (elements.registerTab) {
-            elements.registerTab.addEventListener('click', showRegisterForm);
+      },
+
+      handleStep2: async (e) => {
+        e.preventDefault();
+        methods.clearErrors();
+        const formData = methods.getStep2Data();
+        if (methods.validateStep2(formData)) {
+          const allData = methods.getAllFormData();
+          await methods.registerUser(allData);
         }
-        
-        // Botón de usuario
-        if (elements.userButton) {
-            elements.userButton.addEventListener('click', function(e) {
-                if (currentUser) {
-                    e.preventDefault();
-                    toggleUserMenu();
-                } else {
-                    toggleAuthModal();
-                }
-            });
+      },
+
+      handlePrev: () => {
+        methods.clearErrors();
+        methods.showStep1();
+      },
+
+      handleLogin: async (e) => {
+        e.preventDefault();
+        const loginData = methods.getLoginData();
+        if (methods.validateLogin(loginData)) {
+          await methods.loginUser(loginData);
         }
+      }
     }
-    
-    // Mostrar formulario de login
-    function showLoginForm() {
-        elements.loginForm.classList.remove('hidden');
-        elements.registerForm.classList.add('hidden');
-        elements.authModalTitle.textContent = 'Iniciar sesión';
-        
-        // Actualizar tabs
-        elements.loginTab.classList.add('active-tab');
-        elements.registerTab.classList.remove('active-tab');
-    }
-    
-    // Mostrar formulario de registro
-    function showRegisterForm() {
-        elements.loginForm.classList.add('hidden');
-        elements.registerForm.classList.remove('hidden');
-        elements.authModalTitle.textContent = 'Crear cuenta';
-        
-        // Actualizar tabs
-        elements.registerTab.classList.add('active-tab');
-        elements.loginTab.classList.remove('active-tab');
-    }
-    
-    // Alternar modal de autenticación
-    function toggleAuthModal() {
-        elements.authModal.classList.toggle('active');
-        document.body.style.overflow = elements.authModal.classList.contains('active') ? 'hidden' : '';
-        
-        if (elements.authModal.classList.contains('active')) {
-            showLoginForm();
-        }
-    }
-    
-    // Cerrar modal de autenticación
-    function closeAuthModal() {
-        elements.authModal.classList.remove('active');
-        document.body.style.overflow = '';
-    }
-    
-    // Manejar login
-    function handleLogin(event) {
-        event.preventDefault();
-        
-        const email = document.getElementById('loginEmail').value;
-        const password = document.getElementById('loginPassword').value;
-        
-        const users = JSON.parse(localStorage.getItem('users')) || [];
-        const user = users.find(u => u.email === email && u.password === password);
-        
-        if (user) {
-            currentUser = {
-                name: user.name,
-                email: user.email
-            };
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
-            
-            showNotification('Sesión iniciada correctamente');
-            closeAuthModal();
-            updateUI();
-        } else {
-            showNotification('Credenciales incorrectas', 'error');
-        }
-    }
-    
-    // Manejar registro
-    function handleRegister(event) {
-        event.preventDefault();
-        
-        const firstName = document.getElementById('registerFirstName').value;
-        const lastName = document.getElementById('registerLastName').value;
-        const email = document.getElementById('registerEmail').value;
-        const password = document.getElementById('registerPassword').value;
-        const confirmPassword = document.getElementById('registerConfirmPassword').value;
-        
-        // Validaciones
-        if (password !== confirmPassword) {
-            showNotification('Las contraseñas no coinciden', 'error');
-            return;
-        }
-        
-        const users = JSON.parse(localStorage.getItem('users')) || [];
-        
-        if (users.some(u => u.email === email)) {
-            showNotification('Este email ya está registrado', 'error');
-            return;
-        }
-        
-        const newUser = {
-            name: `${firstName} ${lastName}`,
-            email: email,
-            password: password
-        };
-        
-        users.push(newUser);
-        localStorage.setItem('users', JSON.stringify(users));
-        
-        currentUser = {
-            name: newUser.name,
-            email: newUser.email
-        };
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        
-        showNotification('Cuenta creada correctamente');
-        closeAuthModal();
-        updateUI();
-    }
-    
-    // Cerrar sesión
-    function logout() {
-        currentUser = null;
-        localStorage.removeItem('currentUser');
-        updateUI();
-        showNotification('Sesión cerrada correctamente');
-    }
-    
-    // Mostrar menú de usuario
-    function toggleUserMenu() {
-        const userMenu = document.createElement('div');
-        userMenu.className = 'user-menu';
-        userMenu.innerHTML = `
-            <div class="user-menu-item" onclick="Auth.logout()">Cerrar sesión</div>
-            <a href="account.html" class="user-menu-item">Mi cuenta</a>
-            <a href="orders.html" class="user-menu-item">Mis pedidos</a>
-        `;
-        
-        elements.userButton.appendChild(userMenu);
-        
-        document.addEventListener('click', function closeMenu(e) {
-            if (!elements.userButton.contains(e.target)) {
-                userMenu.remove();
-                document.removeEventListener('click', closeMenu);
-            }
+
+    const methods = {
+      showError: (element, message) => {
+        element.textContent = message;
+        element.classList.remove('hidden');
+      },
+
+      clearErrors: () => {
+        [
+          htmlElements.fullNameError,
+          htmlElements.usernameError,
+          htmlElements.emailError,
+          htmlElements.passwordError,
+          htmlElements.phoneError,
+          htmlElements.addressError
+        ].forEach(element => {
+          if (element) {
+            element.textContent = '';
+            element.classList.add('hidden');
+          }
         });
-    }
-    
-    // Actualizar UI según estado de autenticación
-    function updateUI() {
-        if (!elements.userButton) return;
-        
-        if (currentUser) {
-            elements.userButton.innerHTML = `
-                <div class="user-profile">
-                    <span class="user-name">${currentUser.name.split(' ')[0]}</span>
-                    <div class="user-avatar">${currentUser.name.charAt(0)}</div>
-                </div>
-            `;
-        } else {
-            elements.userButton.innerHTML = '<i class="fas fa-user"></i>';
+      },
+
+      getStep1Data: () => {
+        return {
+          fullName: htmlElements.fullNameInput.value,
+          username: htmlElements.usernameInput.value,
+          email: htmlElements.emailInput.value
         }
-    }
-    
-    // Mostrar notificación
-    function showNotification(message, type = 'success') {
-        const notification = document.createElement('div');
-        notification.className = `auth-notification ${type}`;
-        notification.textContent = message;
-        document.body.appendChild(notification);
+      },
+
+      getStep2Data: () => {
+        return {
+          password: htmlElements.passwordInput.value,
+          phone: htmlElements.phoneInput.value,
+          address: htmlElements.addressInput.value
+        }
+      },
+
+      getLoginData: () => {
+        return {
+          email: htmlElements.loginEmailInput.value,
+          password: htmlElements.loginPasswordInput.value
+        }
+      },
+
+      getAllFormData: () => {
+        return {
+          ...methods.getStep1Data(),
+          ...methods.getStep2Data(),
+          subscription: "ODYM User"
+        }
+      },
+
+      validateStep1: (data) => {
+        let isValid = true;
         
-        setTimeout(() => {
-            notification.classList.add('fade-out');
-            setTimeout(() => notification.remove(), 300);
-        }, 3000);
+        if (!data.fullName) {
+          methods.showError(htmlElements.fullNameError, 'Por favor ingrese su nombre completo');
+          isValid = false;
+        }
+        
+        if (!data.username) {
+          methods.showError(htmlElements.usernameError, 'Por favor ingrese un nombre de usuario');
+          isValid = false;
+        }
+        
+        if (!data.email) {
+          methods.showError(htmlElements.emailError, 'Por favor ingrese su correo electrónico');
+          isValid = false;
+        } else if (!methods.validateEmail(data.email)) {
+          methods.showError(htmlElements.emailError, 'Por favor ingrese un correo electrónico válido');
+          isValid = false;
+        }
+
+        return isValid;
+      },
+
+      validateStep2: (data) => {
+        let isValid = true;
+
+        if (!data.password) {
+          methods.showError(htmlElements.passwordError, 'Por favor ingrese una contraseña');
+          isValid = false;
+        } else if (data.password.length < 6) {
+          methods.showError(htmlElements.passwordError, 'La contraseña debe tener al menos 6 caracteres');
+          isValid = false;
+        }
+
+        if (!data.phone) {
+          methods.showError(htmlElements.phoneError, 'Por favor ingrese su número de teléfono');
+          isValid = false;
+        }
+
+        if (!data.address) {
+          methods.showError(htmlElements.addressError, 'Por favor ingrese su dirección');
+          isValid = false;
+        }
+
+        return isValid;
+      },
+
+      validateLogin: (data) => {
+        if (!data.email || !data.password) {
+          alert('Por favor complete todos los campos');
+          return false;
+        }
+        if (!methods.validateEmail(data.email)) {
+          alert('Por favor ingrese un correo electrónico válido');
+          return false;
+        }
+        return true;
+      },
+
+      validateEmail: (email) => {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(email);
+      },
+
+      showStep1: () => {
+        htmlElements.step2Form.classList.add('hidden');
+        htmlElements.step1Form.classList.remove('hidden');
+      },
+
+      showStep2: () => {
+        htmlElements.step1Form.classList.add('hidden');
+        htmlElements.step2Form.classList.remove('hidden');
+      },
+
+      hashPassword: async (password) => {
+        try {
+          const bcrypt = dcodeIO.bcrypt;
+          const salt = await bcrypt.genSalt(10);
+          const hashedPassword = await bcrypt.hash(password, salt);
+          return hashedPassword;
+        } catch (error) {
+          console.error('Error al hashear la contraseña:', error);
+          throw error;
+        }
+      },
+
+      registerUser: async (formData) => {
+        try {
+          // Verificar si el username ya existe
+          const checkUsername = await fetch(`http://localhost:3000/api/customers/check-username/${formData.username}`);
+          const usernameData = await checkUsername.json();
+          
+          if (usernameData.exists) {
+            methods.showError(htmlElements.usernameError, 'El nombre de usuario ya está en uso. Por favor, elija otro.');
+            methods.showStep1();
+            return;
+          }
+
+          // Verificar si el email ya existe
+          const checkEmail = await fetch(`http://localhost:3000/api/customers/check-email/${formData.email}`);
+          const emailData = await checkEmail.json();
+          
+          if (emailData.exists) {
+            methods.showError(htmlElements.emailError, 'El correo electrónico ya está registrado. Por favor, use otro o inicie sesión.');
+            methods.showStep1();
+            return;
+          }
+
+          // Si las validaciones pasan, proceder con el registro
+          const hashedPassword = await methods.hashPassword(formData.password);
+          const dataToSend = {
+            ...formData,
+            password: hashedPassword
+          };
+
+          const response = await fetch('http://localhost:3000/api/customers/register', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(dataToSend)
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Error en el registro');
+          }
+
+          const data = await response.json();
+          window.location.href = 'http://localhost:5500/odym-frontend/';
+        } catch (error) {
+          console.error('Error al registrar usuario:', error);
+          if (error.message.includes('duplicate')) {
+            methods.showError(htmlElements.usernameError, 'El usuario o correo ya existe. Por favor, intente con otros datos.');
+            methods.showStep1();
+          } else {
+            methods.showError(htmlElements.passwordError, 'Hubo un error al registrar el usuario. Por favor, intente nuevamente.');
+          }
+        }
+      },
+
+      loginUser: async (loginData) => {
+        try {
+          const response = await fetch('http://localhost:3000/api/customers/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(loginData)
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Error al iniciar sesión');
+          }
+
+          const data = await response.json();
+          // Store user data in localStorage
+          localStorage.setItem('user', JSON.stringify(data.customer));
+          // Redirect to home page
+          window.location.href = 'http://localhost:5500/odym-frontend/';
+        } catch (error) {
+          console.error('Error al iniciar sesión:', error);
+          alert(error.message || 'Hubo un error al iniciar sesión. Por favor, intente nuevamente.');
+        }
+      }
     }
-    
-    // API pública
+
     return {
-        init,
-        toggleAuthModal,
-        closeAuthModal,
-        handleLogin,
-        handleRegister,
-        logout,
-        currentUser: () => currentUser
-    };
+      init: () => {
+        // Initialize registration form if present
+        if (htmlElements.step1Form && htmlElements.step2Form) {
+          htmlElements.step1Form.addEventListener('submit', handlers.handleStep1);
+          htmlElements.step2Form.addEventListener('submit', handlers.handleStep2);
+          htmlElements.prevBtn.addEventListener('click', handlers.handlePrev);
+        }
+        
+        // Initialize login form if present
+        if (htmlElements.loginForm) {
+          htmlElements.loginForm.addEventListener('submit', handlers.handleLogin);
+        }
+      }
+    }
+  })();
+
+  Auth.init();
 })();
-
-// Inicializar cuando el DOM esté listo
-document.addEventListener('DOMContentLoaded', () => {
-    Auth.init();
-    
-    // Asignar manejadores si los formularios existen
-    const loginForm = document.getElementById('loginForm');
-    const registerForm = document.getElementById('registerForm');
-    
-    if (loginForm) {
-        loginForm.addEventListener('submit', (e) => Auth.handleLogin(e));
-    }
-    
-    if (registerForm) {
-        registerForm.addEventListener('submit', (e) => Auth.handleRegister(e));
-    }
-});
-
-// Hacer Auth accesible globalmente
-window.Auth = Auth;

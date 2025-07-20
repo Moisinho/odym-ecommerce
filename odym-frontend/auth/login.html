@@ -24,31 +24,62 @@
         </h2>
         <p class="mt-4 text-gray-300 text-sm">Tu tienda online de artículos fitness</p>
       </div>
-      <img src="https://cdn-icons-png.flaticon.com/512/1048/1048953.png" alt="Icono de pesas de gimnasio" class="w-28 h-28 mb-6 opacity-90" />
-      <p class="text-center text-gray-300 italic">“La disciplina supera al talento cuando el talento no se disciplina.”</p>
+      <img 
+        src="https://cdn-icons-png.flaticon.com/512/2936/2936886.png" 
+        alt="Icono de gimnasio" 
+        class="w-32 h-32 mb-6 opacity-90 object-contain filter invert" 
+      />
+      <p class="text-center text-gray-300 italic">"La disciplina supera al talento cuando el talento no se disciplina."</p>
     </div>
 
     <!-- Right Panel -->
     <div id="right" class="flex flex-col w-1/2 bg-white px-12 py-8 justify-center">
       <h1 class="text-black text-center text-3xl font-bold mb-10">Inicia Sesión</h1>
 
-      <!-- Usuario -->
-      <div class="flex flex-col mb-6">
-        <label class="mb-2 text-gray-700 font-medium" for="usuario">Nombre de Usuario</label>
-        <input class="bg-gray-100 p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-400 transition" type="text" id="usuario">
-      </div>
+      <form id="login-form" class="flex flex-col">
+        <!-- Email -->
+        <div class="flex flex-col mb-6">
+          <label class="mb-2 text-gray-700 font-medium" for="login-email">Correo Electrónico</label>
+          <input 
+            class="bg-gray-100 p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-400 transition" 
+            type="email" 
+            id="login-email"
+            placeholder="tucorreo@ejemplo.com"
+            required
+          >
+        </div>
 
-      <!-- Contraseña -->
-      <div class="flex flex-col mb-10">
-        <label class="mb-2 text-gray-700 font-medium" for="contrasena">Contraseña</label>
-        <input class="bg-gray-100 p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-400 transition" type="password" id="contrasena">
-      </div>
+        <!-- Password -->
+        <div class="flex flex-col mb-10">
+          <label class="mb-2 text-gray-700 font-medium" for="login-password">Contraseña</label>
+          <input 
+            class="bg-gray-100 p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-400 transition" 
+            type="password" 
+            id="login-password"
+            placeholder="********"
+            required
+          >
+        </div>
 
-      <!-- Botón -->
-      <div class="w-full">
-        <button class="w-full p-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg shadow-md transition">Enviar</button>    
-      </div>            
+        <!-- Button -->
+        <div class="w-full">
+          <button 
+            id="login-button"
+            type="submit"
+            class="w-full p-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg shadow-md transition"
+          >
+            Iniciar Sesión
+          </button>    
+        </div>            
+      </form>
+
+      <div class="w-full text-center mt-6">
+        <a href="register.html" class="text-sm text-gray-600 hover:text-orange-500 transition cursor-pointer">
+          ¿No tienes cuenta? Regístrate
+        </a>
+      </div>
     </div>
   </div>
 </body>
+<script src="auth.js"></script>
 </html>
