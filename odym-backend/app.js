@@ -22,6 +22,7 @@ config(); // Load environment variables from .env file
 const PORT = process.env.PORT;
 const MONGO_URI = 'mongodb://root:example@localhost:27017/';
 
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 

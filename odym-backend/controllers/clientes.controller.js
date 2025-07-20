@@ -1,5 +1,10 @@
 import Cliente from '../models/Cliente.js';
 
+export async function obtenerClientes(request, reply) {
+  const clientes = await Cliente.find();
+  return reply.status(200).send({ clientes });
+}
+
 export async function loginCliente(request, reply) {
   const { correo, contrasena } = request.body;
 
@@ -22,4 +27,27 @@ export async function loginCliente(request, reply) {
       correo: cliente.correo
     }
   };
+}
+
+export async function registroCliente(request, reply) {
+  const { nombre_completo, nombre_usuario, correo, contrasena, suscripcion, telefono, direccion } = request.body;
+
+  const cliente = await Cliente.create({ nombre_completo, nombre_usuario, correo, contrasena, suscripcion, telefono, direccion });
+
+  return reply.status(201).send({ mensaje: 'Cliente registrado exitosamente', cliente });
+}
+
+export async function editarCliente(request, reply) {
+  const { id } = request.params;
+  const { nombre_completo, nombre_usuario, correo, contrasena, suscripcion, telefono, direccion } = request.body;
+
+  const cliente = await Cliente.findByIdAndUpdate(id, { nombre_completo, nombre_usuario, correo, contrasena, suscripcion, telefono, direccion }, { new: true });
+
+  return reply.status(200).send({ mensaje: 'Cliente actualizado exitosamente', cliente });
+}
+
+export async function eliminarCliente(request, reply) {
+  const { id } = request.params;
+  await Cliente.findByIdAndDelete(id);
+  return reply.status(200).send({ mensaje: 'Cliente eliminado exitosamente' });
 }
