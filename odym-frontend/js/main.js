@@ -53,40 +53,55 @@ async function loadFeaturedProducts() {
     }
 }
 
+
+document.addEventListener('DOMContentLoaded', fetchAndRenderFeaturedProducts);
+
+// Ver detalle de producto
 // Ver detalle de producto
 function viewProduct(productId) {
-    const product = products.find(p => p.id === productId);
-    if (product) {
-        currentProduct = product;
-        
-        // Actualizar modal
-        document.getElementById('modalProductTitle').textContent = product.name;
-        document.getElementById('modalProductImage').src = product.images[0];
-        document.getElementById('modalProductCategory').textContent = product.category.name;
-        document.getElementById('modalProductPrice').textContent = `$${product.price.toFixed(2)}`;
-        document.getElementById('modalProductDescription').textContent = product.description;
-        document.getElementById('stock').textContent = product.stock;
-        document.getElementById('productQuantity').value = 1;
-        
-        // Configurar botones
-        document.getElementById('addToCartBtn').onclick = () => {
-            const quantity = parseInt(document.getElementById('productQuantity').value);
-            addToCart(product.id, quantity);
-            closeProductModal();
-        };
-        
-        document.getElementById('buyNowBtn').onclick = () => {
-            const quantity = parseInt(document.getElementById('productQuantity').value);
-            addToCart(product.id, quantity);
-            closeProductModal();
-            toggleCart();
-            document.getElementById('checkoutBtn').click();
-        };
-        
-        // Mostrar modal
-        document.getElementById('productModal').classList.add('active');
-        document.body.style.overflow = 'hidden';
+  // Usamos la variable global window.featuredProducts
+  const product = window.featuredProducts.find(p => p._id === productId);
+  
+  if (product) {
+    currentProduct = product;
+    
+    // Actualizar modal
+    const modal = document.getElementById('productModal');
+    if (!modal) {
+      console.error('Product modal not found');
+      return;
     }
+    
+    document.getElementById('modalProductTitle').textContent = product.name;
+    document.getElementById('modalProductImage').src = product.images[0] || '/assets/img/placeholder-product.png';
+    document.getElementById('modalProductCategory').textContent = product.category?.name || 'General';
+    document.getElementById('modalProductPrice').textContent = `$${product.price?.toFixed(2) || '0.00'}`;
+    document.getElementById('modalProductDescription').textContent = product.description || 'Sin descripción disponible';
+    document.getElementById('stock').textContent = product.stock || 'Disponible';
+    document.getElementById('productQuantity').value = 1;
+    
+    // Configurar botones
+    document.getElementById('addToCartBtn').onclick = () => {
+      const quantity = parseInt(document.getElementById('productQuantity').value);
+      addToCart(product._id, quantity);
+      closeProductModal();
+    };
+    
+    document.getElementById('buyNowBtn').onclick = () => {
+      const quantity = parseInt(document.getElementById('productQuantity').value);
+      addToCart(product._id, quantity);
+      closeProductModal();
+      toggleCart();
+      const checkoutBtn = document.getElementById('checkoutBtn');
+      if (checkoutBtn) checkoutBtn.click();
+    };
+    
+    // Mostrar modal
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  } else {
+    console.error('Product not found:', productId);
+  }
 }
 
 // Cerrar modal de producto
