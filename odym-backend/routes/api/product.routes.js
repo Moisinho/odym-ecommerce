@@ -2,6 +2,7 @@ import {
   createProduct, 
   deleteProduct, 
   getProducts, 
+  getProductById,
   updateProduct, 
   updateProductStock, 
   checkStockAvailability,
@@ -22,6 +23,35 @@ async function productRoutes(fastify, options) {
     console.log('GET /api/products/available called');
     const products = await getProductsWithStock();
     reply.send(products);
+  });
+
+  // Obtener producto por ID (MOVIDO AQUÍ PARA EVITAR CONFLICTOS)
+  fastify.get('/:id', async (request, reply) => {
+    const { id } = request.params;
+    console.log('GET /api/products/:id called with id:', id);
+    
+    // Validate ObjectId format
+    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
+      console.log('Invalid ObjectId format:', id);
+      reply.status(400).send({ 
+        error: 'Invalid product ID format',
+        details: 'Product ID must be a valid 24-character hexadecimal string'
+      });
+      return;
+    }
+    
+    try {
+      const product = await getProductById(id);
+      console.log('Product found:', product.name);
+      reply.send(product);
+    } catch (error) {
+      console.error('Error getting product:', error);
+      if (error.message.includes('Product not found')) {
+        reply.status(404).send({ error: 'Product not found' });
+      } else {
+        reply.status(500).send({ error: error.message });
+      }
+    }
   });
 
   // Verificar disponibilidad de stock
@@ -97,39 +127,42 @@ async function productRoutes(fastify, options) {
   });
 
   fastify.delete('/:id', async function (request, reply) {
-    console.log('DELETE /api/products/:id called with id:', request.params.id);
+    const productId = request.params.id;
+    console.log('DELETE /api/products/:id called with id:', productId);
+    
+    // Validate ObjectId format
+    if (!productId || !productId.match(/^[0-9a-fA-F]{24}$/)) {
+      console.log('Invalid ObjectId format:', productId);
+      reply.status(400).send({ 
+        error: 'Invalid product ID format',
+        details: 'Product ID must be a valid 24-character hexadecimal string'
+      });
+      return;
+    }
+    
     try {
-      const deleted = await deleteProduct(request.params.id);
+      const deleted = await deleteProduct(productId);
       if (!deleted) {
+        console.log('Product not found:', productId);
         reply.status(404).send({ error: 'Product not found' });
         return;
       }
-      reply.status(200).send({ message: 'Product deleted successfully' });
+      
+      console.log('Product deleted successfully:', productId);
+      reply.status(200).send({ 
+        success: true,
+        message: 'Product deleted successfully',
+        deletedId: productId 
+      });
     } catch (error) {
-      reply.status(400).send({ error: error.message });
+      console.error('Error deleting product:', error);
+      reply.status(500).send({ 
+        error: 'Internal server error',
+        details: error.message 
+      });
     }
   });
 
-  // Obtener producto por ID
-  fastify.get('/:id', async (request, reply) => {
-    const { id } = request.params;
-    console.log('GET /api/products/:id called with id:', id);
-    
-    try {
-      const product = await getProducts().then(products => 
-        products.find(p => p._id === id)
-      );
-      
-      if (!product) {
-        reply.status(404).send({ error: 'Product not found' });
-        return;
-      }
-      
-      reply.send(product);
-    } catch (error) {
-      reply.status(400).send({ error: error.message });
-    }
-  });
 }
 
 export default productRoutes;

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pago Exitoso - ODYM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full space-y-8">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-24 w-24 rounded-full bg-green-100 mb-6">
+                    <i class="fas fa-check text-green-600 text-4xl"></i>
+                </div>
+                <h2 class="text-3xl font-extrabold text-gray-900 mb-2">
+                    ¡Pago Exitoso!
+                </h2>
+                <p class="text-gray-600 mb-6">
+                    Tu pedido ha sido procesado correctamente
+                </p>
+            </div>
+
+            <div class="bg-white shadow rounded-lg p-6">
+                <div class="border-b border-gray-200 pb-4 mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Detalles del Pedido</h3>
+                </div>
+                
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Número de Orden:</span>
+                        <span class="font-semibold" id="orderNumber">Cargando...</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Estado:</span>
+                        <span class="text-green-600 font-semibold">Pagado</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Fecha:</span>
+                        <span class="font-semibold" id="orderDate"></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Total:</span>
+                        <span class="font-semibold" id="orderTotal">$0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-info-circle text-blue-400"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-blue-800">
+                            ¿Qué sigue?
+                        </h3>
+                        <div class="mt-2 text-sm text-blue-700">
+                            <p>Recibirás un email de confirmación con los detalles de tu pedido. El tiempo de entrega estimado es de 3-5 días hábiles.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex space-x-4">
+                <a href="/index.html" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg text-center transition duration-200">
+                    Continuar Comprando
+                </a>
+                <a href="/account.html" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-4 rounded-lg text-center transition duration-200">
+                    Ver Mis Pedidos
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/cart.js"></script>
+    <script>
+        // Manejar el éxito del pago cuando se carga la página
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Mostrar fecha actual
+            document.getElementById('orderDate').textContent = new Date().toLocaleDateString('es-ES');
+            
+            // Manejar el éxito del pago
+            await handlePaymentSuccess();
+            
+            // Obtener información de la sesión de pago
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionId = urlParams.get('session_id');
+            
+            if (sessionId) {
+                try {
+                    const response = await fetch(`http://localhost:3000/api/checkout/session/${sessionId}`);
+                    const data = await response.json();
+                    
+                    if (data.success && data.session) {
+                        // Actualizar total si está disponible
+                        if (data.session.amount_total) {
+                            const total = (data.session.amount_total / 100).toFixed(2);
+                            document.getElementById('orderTotal').textContent = `$${total}`;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error fetching session details:', error);
+                }
+            }
+            
+            // Generar número de orden aleatorio si no se tiene uno
+            const orderNumber = Math.floor(100000 + Math.random() * 900000);
+            document.getElementById('orderNumber').textContent = orderNumber;
+        });
+    </script>
+</body>
+</html>

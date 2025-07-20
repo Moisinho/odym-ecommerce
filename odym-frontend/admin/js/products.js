@@ -383,9 +383,17 @@ async uploadImageToImgBB(base64Image) {
 }
 
   async deleteProduct(id) {
+    console.log('Attempting to delete product with ID:', id);
     const product = this.products.find(p => p._id === id);
     if (!product) {
       showNotification('Producto no encontrado', 'error');
+      return;
+    }
+
+    // Validate ObjectId format
+    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
+      console.error('Invalid ObjectId format:', id);
+      showNotification('ID de producto inválido: ' + id, 'error');
       return;
     }
 
@@ -394,6 +402,7 @@ async uploadImageToImgBB(base64Image) {
       async () => {
         try {
           showLoading();
+          console.log('Sending DELETE request for product ID:', id);
           await api.deleteProduct(id);
           showNotification('Producto eliminado exitosamente');
           await this.loadProducts();

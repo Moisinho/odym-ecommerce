@@ -1,4 +1,3 @@
-let cart = JSON.parse(localStorage.getItem('cart')) || [];
 let currentProduct = null;
 
 // Funciones de navegación
@@ -130,18 +129,196 @@ function showNotification(message) {
     }, 3000);
 }
 
+// Funciones para el carrito de compras
+async function toggleCart() {
+    const cartModal = document.getElementById('cartModal');
+    if (!cartModal) {
+        console.error('Cart modal not found');
+        return;
+    }
+    
+    // Verificar si cart.js está cargado
+    if (typeof updateCartModal === 'function') {
+        // Si cart.js está disponible, usar su función asíncrona
+        await updateCartModal();
+    } else {
+        // Fallback básico para mostrar el modal
+        console.log('Using fallback cart display');
+        displayBasicCart();
+    }
+    
+    // Toggle del modal
+    cartModal.classList.toggle('active');
+    
+    if (cartModal.classList.contains('active')) {
+        document.body.style.overflow = 'hidden';
+    } else {
+        document.body.style.overflow = '';
+    }
+}
+
+// Función fallback para mostrar carrito básico cuando cart.js no esté disponible
+function displayBasicCart() {
+    const cartItems = document.getElementById('cartItems');
+    const emptyCartMessage = document.getElementById('emptyCartMessage');
+    const cartSummary = document.getElementById('cartSummary');
+    
+    if (!cartItems || !emptyCartMessage || !cartSummary) return;
+    
+    // Cargar carrito desde localStorage
+    const cart = JSON.parse(localStorage.getItem('cart')) || [];
+    
+    // Limpiar contenido
+    cartItems.innerHTML = '';
+    
+    if (cart.length === 0) {
+        emptyCartMessage.classList.remove('hidden');
+        cartSummary.classList.add('hidden');
+        return;
+    }
+    
+    // Ocultar mensaje de carrito vacío
+    emptyCartMessage.classList.add('hidden');
+    cartSummary.classList.remove('hidden');
+    
+    // Mostrar productos básicos
+    cart.forEach((item, index) => {
+        const product = item.product || {};
+        const cartItem = document.createElement('div');
+        cartItem.className = 'flex items-start py-4 border-b border-gray-200';
+        
+        cartItem.innerHTML = `
+            <img src="${product.images?.[0] || product.image || '/assets/img/placeholder-product.png'}" 
+                 alt="${product.name || 'Producto'}" 
+                 class="w-20 h-20 object-cover rounded bg-gray-100 flex-shrink-0">
+            <div class="flex-1 ml-4">
+                <h4 class="font-semibold text-gray-900">${product.name || 'Producto sin nombre'}</h4>
+                <p class="text-gray-600 text-sm">${product.category?.name || product.category || 'Sin categoría'}</p>
+                <p class="text-orange-600 font-bold text-lg mt-1">$${(product.price || 0).toFixed(2)}</p>
+            </div>
+            <div class="flex flex-col items-end space-y-2">
+                <div class="flex items-center bg-gray-100 rounded">
+                    <button class="px-3 py-1 text-gray-600 hover:text-gray-800" onclick="decrementCartItem(${index})">
+                        <i class="fas fa-minus text-xs"></i>
+                    </button>
+                    <span class="px-3 py-1 font-medium text-sm">${item.quantity}</span>
+                    <button class="px-3 py-1 text-gray-600 hover:text-gray-800" onclick="incrementCartItem(${index})">
+                        <i class="fas fa-plus text-xs"></i>
+                    </button>
+                </div>
+                <p class="font-bold text-lg">$${((product.price || 0) * item.quantity).toFixed(2)}</p>
+                <button class="text-red-500 hover:text-red-700 text-sm" onclick="removeCartItem(${index})">
+                    <i class="fas fa-trash mr-1"></i> Eliminar
+                </button>
+            </div>
+        `;
+        cartItems.appendChild(cartItem);
+    });
+    
+    // Actualizar resumen
+    updateBasicCartSummary(cart);
+}
+
+// Función para actualizar resumen básico del carrito
+function updateBasicCartSummary(cart) {
+    const subtotal = cart.reduce((total, item) => {
+        const price = item.product?.price || 0;
+        return total + (price * item.quantity);
+    }, 0);
+    
+    const shipping = subtotal > 0 ? 99.99 : 0;
+    const total = subtotal + shipping;
+    
+    const cartSubtotalElement = document.getElementById('cartSubtotal');
+    const cartShippingElement = document.getElementById('cartShipping');
+    const cartTotalElement = document.getElementById('cartTotal');
+    
+    if (cartSubtotalElement) cartSubtotalElement.textContent = `$${subtotal.toFixed(2)}`;
+    if (cartShippingElement) cartShippingElement.textContent = `$${shipping.toFixed(2)}`;
+    if (cartTotalElement) cartTotalElement.textContent = `$${total.toFixed(2)}`;
+}
+
+// Funciones básicas para manejar el carrito cuando cart.js no esté disponible
+function incrementCartItem(index) {
+    const cart = JSON.parse(localStorage.getItem('cart')) || [];
+    if (cart[index] && cart[index].quantity < 99) {
+        cart[index].quantity++;
+        localStorage.setItem('cart', JSON.stringify(cart));
+        displayBasicCart();
+        updateCartCount();
+    }
+}
+
+function decrementCartItem(index) {
+    const cart = JSON.parse(localStorage.getItem('cart')) || [];
+    if (cart[index] && cart[index].quantity > 1) {
+        cart[index].quantity--;
+        localStorage.setItem('cart', JSON.stringify(cart));
+        displayBasicCart();
+        updateCartCount();
+    }
+}
+
+function removeCartItem(index) {
+    const cart = JSON.parse(localStorage.getItem('cart')) || [];
+    if (cart[index]) {
+        cart.splice(index, 1);
+        localStorage.setItem('cart', JSON.stringify(cart));
+        displayBasicCart();
+        updateCartCount();
+    }
+}
+
+// Actualizar contador del carrito
+function updateCartCount() {
+    const cart = JSON.parse(localStorage.getItem('cart')) || [];
+    const count = cart.reduce((total, item) => total + item.quantity, 0);
+    const cartCount = document.getElementById('cartCount');
+    
+    if (cartCount) {
+        cartCount.textContent = count;
+        
+        // Mostrar/ocultar contador
+        if (count > 0) {
+            cartCount.classList.remove('hidden');
+        } else {
+            cartCount.classList.add('hidden');
+        }
+    }
+}
+
+function closeCartModal() {
+    const cartModal = document.getElementById('cartModal');
+    if (cartModal) {
+        cartModal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+
 // Elimina las funciones de autenticación que ahora están en auth.js
 // Solo mantén esta función para actualizar el carrito basado en el usuario
 function updateCartForUser() {
-    const user = Auth.currentUser();
-    if (user) {
-        // Opcional: cargar el carrito del usuario desde backend en el futuro
-        console.log("Usuario logueado, cargar su carrito");
-    } else {
-        // Mantener carrito local
-        console.log("Usuario no logueado, usar carrito local");
+    try {
+        if (typeof Auth !== 'undefined' && Auth.currentUser) {
+            const user = Auth.currentUser();
+            if (user) {
+                // Opcional: cargar el carrito del usuario desde backend en el futuro
+                console.log("Usuario logueado, cargar su carrito");
+            } else {
+                // Mantener carrito local
+                console.log("Usuario no logueado, usar carrito local");
+            }
+        } else {
+            console.log("Auth no disponible, usar carrito local");
+        }
+    } catch (error) {
+        console.log("Error con Auth, usar carrito local:", error);
     }
-    updateCartCount();
+    
+    // Llamar updateCartCount solo si existe (está definida en cart.js)
+    if (typeof updateCartCount === 'function') {
+        updateCartCount();
+    }
 }
 
 // Modifica el event listener del DOMContentLoaded
@@ -163,6 +340,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Actualizar UI basado en autenticación
     updateCartForUser();
+    
+    // Inicializar contador del carrito
+    updateCartCount();
 });
 
 // Categorías móviles
