@@ -24,10 +24,9 @@
         </h2>
         <p class="mt-4 text-gray-300 text-sm">Tu tienda online de artículos fitness</p>
       </div>
-      <img 
-        src="https://cdn-icons-png.flaticon.com/512/2936/2936886.png" 
+      <img src="https://cdn-icons-png.flaticon.com/512/2936/2936886.png" 
         alt="Icono de gimnasio" 
-        class="w-32 h-32 mb-6 opacity-90 object-contain filter invert" 
+        class="w-32 h-32 mb-6 opacity-90 object-contain [filter:brightness(0)_sepia(100%)_saturate(2000%)_hue-rotate(360deg)]" 
       />
       <p class="text-center text-gray-300 italic">"La disciplina supera al talento cuando el talento no se disciplina."</p>
     </div>
@@ -37,19 +36,20 @@
       <h1 class="text-black text-center text-3xl font-bold mb-10">Inicia Sesión</h1>
 
       <form id="login-form" class="flex flex-col">
-        <!-- Email -->
+        <!-- Email o Username -->
         <div class="flex flex-col mb-6">
-          <label class="mb-2 text-gray-700 font-medium" for="login-email">Correo Electrónico</label>
+          <label class="mb-2 text-gray-700 font-medium" for="login-identifier">Email o Nombre de Usuario</label>
           <input 
             class="bg-gray-100 p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-400 transition" 
-            type="email" 
-            id="login-email"
-            placeholder="tucorreo@ejemplo.com"
+            type="text" 
+            id="login-identifier"
+            placeholder="tucorreo@ejemplo.com o tu usuario"
             required
           >
+          <span id="identifier-error" class="text-red-500 text-sm mt-1 hidden"></span>
         </div>
 
-        <!-- Password -->
+        <!-- Contraseña -->
         <div class="flex flex-col mb-10">
           <label class="mb-2 text-gray-700 font-medium" for="login-password">Contraseña</label>
           <input 
@@ -59,9 +59,10 @@
             placeholder="********"
             required
           >
+          <span id="password-error" class="text-red-500 text-sm mt-1 hidden"></span>
         </div>
 
-        <!-- Button -->
+        <!-- Botón -->
         <div class="w-full">
           <button 
             id="login-button"
@@ -81,5 +82,8 @@
     </div>
   </div>
 </body>
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
+<script src="../assets/js/auth-service.js"></script>
 <script src="auth.js"></script>
 </html>

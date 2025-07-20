@@ -3,121 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ODYM - Equipamiento de Gimnasio Premium</title>
+    <title>ODYM - Equipamiento Fitness</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="/auth/auth.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+        }
+    </style>
 </head>
 <body>
     <!-- Header -->
-    <div id="header"></div>
+    <div id="header-container"></div>
 
-    <!-- Contenido Principal -->
-    <main>
-        <!-- Banner Principal -->
-        <section class="banner w-full h-96 flex items-center justify-center mb-12">
-            <div class="text-center px-4">
-                <h1 class="text-4xl md:text-5xl font-bold text-white mb-4 animate-fadeIn">TRANSFORMA TU CUERPO</h1>
-                <p class="text-xl text-white mb-8 max-w-2xl mx-auto animate-fadeIn">Equipamiento de alta calidad para alcanzar tus metas fitness</p>
-                <a href="products.html" class="bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-8 rounded-full transition duration-300 animate-slideUp inline-block">
-                    VER PRODUCTOS
-                </a>
-            </div>
-        </section>
+    <!-- Hero Section -->
+    <section class="bg-gray-900 text-white py-20">
+        <div class="container mx-auto px-4 text-center">
+            <h1 class="text-5xl font-bold mb-4">TRANSFORMA TU CUERPO</h1>
+            <p class="text-xl mb-8">Equipamiento de alta calidad para alcanzar tus metas fitness</p>
+            <a href="products.html" class="bg-orange-500 text-white px-8 py-3 rounded-lg hover:bg-orange-600 transition duration-300">
+                VER PRODUCTOS
+            </a>
+        </div>
+    </section>
 
-        <!-- Categorías destacadas -->
-        <section class="container mx-auto px-4 mb-16">
-            <h2 class="text-3xl font-bold text-center mb-10">CATEGORÍAS DESTACADAS</h2>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
-                <a href="products.html?category=pesas" class="category-badge bg-gray-800 rounded-lg overflow-hidden cursor-pointer">
-                    <div class="h-40 bg-gray-700 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                        </svg>
-                    </div>
-                    <div class="p-4 text-center">
-                        <h3 class="text-white font-bold">Pesas</h3>
-                    </div>
-                </a>
-                <a href="products.html?category=maquinas" class="category-badge bg-gray-800 rounded-lg overflow-hidden cursor-pointer">
-                    <div class="h-40 bg-gray-700 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-                        </svg>
-                    </div>
-                    <div class="p-4 text-center">
-                        <h3 class="text-white font-bold">Máquinas</h3>
-                    </div>
-                </a>
-                <a href="products.html?category=accesorios" class="category-badge bg-gray-800 rounded-lg overflow-hidden cursor-pointer">
-                    <div class="h-40 bg-gray-700 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                        </svg>
-                    </div>
-                    <div class="p-4 text-center">
-                        <h3 class="text-white font-bold">Accesorios</h3>
-                    </div>
-                </a>
-                <a href="products.html?category=suplementos" class="category-badge bg-gray-800 rounded-lg overflow-hidden cursor-pointer">
-                    <div class="h-40 bg-gray-700 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                        </svg>
-                    </div>
-                    <div class="p-4 text-center">
-                        <h3 class="text-white font-bold">Suplementos</h3>
-                    </div>
-                </a>
+    <!-- Categorías Destacadas -->
+    <section class="py-16">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-12">CATEGORÍAS DESTACADAS</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- Las categorías se cargarán dinámicamente -->
             </div>
-        </section>
-
-        <!-- Productos destacados por categoría -->
-        <section class="container mx-auto px-4 mb-16">
-            <h2 class="text-3xl font-bold text-center mb-10">PRODUCTOS DESTACADOS</h2>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-8" id="featuredProducts">
-                <!-- Los productos destacados se cargarán aquí -->
-            </div>
-        </section>
-
-        <!-- Banner promocional -->
-        <section class="bg-gray-900 py-16 mb-16">
-            <div class="container mx-auto px-4 text-center">
-                <h2 class="text-3xl font-bold text-white mb-4">ENTRENA COMO UN PROFESIONAL</h2>
-                <p class="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">Equípate con lo mejor y alcanza resultados extraordinarios</p>
-                <a href="products.html" class="bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-8 rounded-full transition duration-300 inline-block">
-                    COMPRAR AHORA
-                </a>
-            </div>
-        </section>
-    </main>
+        </div>
+    </section>
 
     <!-- Footer -->
-    <div id="footer"></div>
+    <div id="footer-container"></div>
 
-    <!-- Modales -->
-    <div id="modals"></div>
-
-    <script src="js/main.js"></script>
-    <script src="js/products.js"></script>
-    <script src="js/index-products.js"></script>
-    <script src="js/products-api.js"></script>
+    <!-- Scripts -->
+    <script src="assets/js/auth-service.js"></script>
     <script>
-        // Cargar partials
-        fetch('partials/header.html')
-            .then(response => response.text())
-            .then(data => document.getElementById('header').innerHTML = data);
-            
-        fetch('partials/footer.html')
-            .then(response => response.text())
-            .then(data => document.getElementById('footer').innerHTML = data);
-            
-        fetch('partials/modals.html')
-            .then(response => response.text())
-            .then(data => document.getElementById('modals').innerHTML = data);
+        // Función para cargar el header y sus scripts
+        async function loadHeader() {
+            try {
+                const response = await fetch('partials/header.html');
+                const data = await response.text();
+                document.getElementById('header-container').innerHTML = data;
+                
+                // Cargar el script del header después de que el contenido esté en el DOM
+                const headerScript = document.createElement('script');
+                headerScript.src = 'assets/js/header.js';
+                document.body.appendChild(headerScript);
+            } catch (error) {
+                console.error('Error loading header:', error);
+            }
+        }
+
+        // Función para cargar el footer
+        async function loadFooter() {
+            try {
+                const response = await fetch('partials/footer.html');
+                const data = await response.text();
+                document.getElementById('footer-container').innerHTML = data;
+            } catch (error) {
+                console.error('Error loading footer:', error);
+            }
+        }
+
+        // Cargar los componentes cuando el DOM esté listo
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                loadHeader();
+                loadFooter();
+            });
+        } else {
+            loadHeader();
+            loadFooter();
+        }
     </script>
-    <script src="/auth/auth.js"></script>
-<script src="/js/main.js"></script>
 </body>
 </html>

@@ -13,7 +13,7 @@
       passwordInput: document.querySelector("#contrasena"),
       phoneInput: document.querySelector("#telefono"),
       addressInput: document.querySelector("#direccion"),
-      // Error messages
+      // Error messages for registration
       fullNameError: document.querySelector("#nombre-error"),
       usernameError: document.querySelector("#usuario-error"),
       emailError: document.querySelector("#correo-error"),
@@ -22,9 +22,12 @@
       addressError: document.querySelector("#direccion-error"),
       // Login elements
       loginForm: document.querySelector("#login-form"),
-      loginEmailInput: document.querySelector("#login-email"),
+      loginIdentifierInput: document.querySelector("#login-identifier"),
       loginPasswordInput: document.querySelector("#login-password"),
-      loginButton: document.querySelector("#login-button")
+      loginButton: document.querySelector("#login-button"),
+      // Error messages for login
+      identifierError: document.querySelector("#identifier-error"),
+      loginPasswordError: document.querySelector("#password-error")
     }
 
     const handlers = {
@@ -54,6 +57,7 @@
 
       handleLogin: async (e) => {
         e.preventDefault();
+        methods.clearLoginErrors();
         const loginData = methods.getLoginData();
         if (methods.validateLogin(loginData)) {
           await methods.loginUser(loginData);
@@ -83,6 +87,25 @@
         });
       },
 
+      clearLoginErrors: () => {
+        [
+          htmlElements.identifierError,
+          htmlElements.loginPasswordError
+        ].forEach(element => {
+          if (element) {
+            element.textContent = '';
+            element.classList.add('hidden');
+          }
+        });
+      },
+
+      getLoginData: () => {
+        return {
+          identifier: htmlElements.loginIdentifierInput.value,
+          password: htmlElements.loginPasswordInput.value
+        }
+      },
+
       getStep1Data: () => {
         return {
           fullName: htmlElements.fullNameInput.value,
@@ -96,13 +119,6 @@
           password: htmlElements.passwordInput.value,
           phone: htmlElements.phoneInput.value,
           address: htmlElements.addressInput.value
-        }
-      },
-
-      getLoginData: () => {
-        return {
-          email: htmlElements.loginEmailInput.value,
-          password: htmlElements.loginPasswordInput.value
         }
       },
 
@@ -163,15 +179,19 @@
       },
 
       validateLogin: (data) => {
-        if (!data.email || !data.password) {
-          alert('Por favor complete todos los campos');
-          return false;
+        let isValid = true;
+
+        if (!data.identifier) {
+          methods.showError(htmlElements.identifierError, 'Por favor ingrese su email o nombre de usuario');
+          isValid = false;
         }
-        if (!methods.validateEmail(data.email)) {
-          alert('Por favor ingrese un correo electrónico válido');
-          return false;
+
+        if (!data.password) {
+          methods.showError(htmlElements.loginPasswordError, 'Por favor ingrese su contraseña');
+          isValid = false;
         }
-        return true;
+
+        return isValid;
       },
 
       validateEmail: (email) => {
@@ -189,12 +209,20 @@
         htmlElements.step2Form.classList.remove('hidden');
       },
 
+      // Nueva función para hashear contraseñas
       hashPassword: async (password) => {
         try {
-          const bcrypt = dcodeIO.bcrypt;
-          const salt = await bcrypt.genSalt(10);
-          const hashedPassword = await bcrypt.hash(password, salt);
-          return hashedPassword;
+          // Convertir la contraseña a un array de bytes
+          const msgBuffer = new TextEncoder().encode(password + "ODYM_SALT_2024");
+          
+          // Hashear usando SHA-256
+          const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+          
+          // Convertir el hash a string hexadecimal
+          const hashArray = Array.from(new Uint8Array(hashBuffer));
+          const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+          
+          return hashHex;
         } catch (error) {
           console.error('Error al hashear la contraseña:', error);
           throw error;
@@ -203,27 +231,7 @@
 
       registerUser: async (formData) => {
         try {
-          // Verificar si el username ya existe
-          const checkUsername = await fetch(`http://localhost:3000/api/customers/check-username/${formData.username}`);
-          const usernameData = await checkUsername.json();
-          
-          if (usernameData.exists) {
-            methods.showError(htmlElements.usernameError, 'El nombre de usuario ya está en uso. Por favor, elija otro.');
-            methods.showStep1();
-            return;
-          }
-
-          // Verificar si el email ya existe
-          const checkEmail = await fetch(`http://localhost:3000/api/customers/check-email/${formData.email}`);
-          const emailData = await checkEmail.json();
-          
-          if (emailData.exists) {
-            methods.showError(htmlElements.emailError, 'El correo electrónico ya está registrado. Por favor, use otro o inicie sesión.');
-            methods.showStep1();
-            return;
-          }
-
-          // Si las validaciones pasan, proceder con el registro
+          // Hash the password before sending
           const hashedPassword = await methods.hashPassword(formData.password);
           const dataToSend = {
             ...formData,
@@ -244,10 +252,12 @@
           }
 
           const data = await response.json();
+          // Guardar datos del usuario y redirigir
+          AuthService.setUser(data.customer);
           window.location.href = 'http://localhost:5500/odym-frontend/';
         } catch (error) {
           console.error('Error al registrar usuario:', error);
-          if (error.message.includes('duplicate')) {
+          if (error.message.includes('duplicate') || error.message.includes('ya existe')) {
             methods.showError(htmlElements.usernameError, 'El usuario o correo ya existe. Por favor, intente con otros datos.');
             methods.showStep1();
           } else {
@@ -258,12 +268,19 @@
 
       loginUser: async (loginData) => {
         try {
+          // Hash the password before sending
+          const hashedPassword = await methods.hashPassword(loginData.password);
+          const dataToSend = {
+            ...loginData,
+            password: hashedPassword
+          };
+
           const response = await fetch('http://localhost:3000/api/customers/login', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify(loginData)
+            body: JSON.stringify(dataToSend)
           });
 
           if (!response.ok) {
@@ -272,9 +289,9 @@
           }
 
           const data = await response.json();
-          // Store user data in localStorage
-          localStorage.setItem('user', JSON.stringify(data.customer));
-          // Redirect to home page
+          // Guardar datos del usuario
+          AuthService.setUser(data.customer);
+          // Redirigir a la página principal
           window.location.href = 'http://localhost:5500/odym-frontend/';
         } catch (error) {
           console.error('Error al iniciar sesión:', error);

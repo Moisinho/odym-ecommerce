@@ -3,61 +3,125 @@
         <div class="flex justify-between items-center">
             <!-- Logo -->
             <div class="flex items-center">
-                <a href="index.html" class="flex items-center">
+                <a href="../index.html" class="flex items-center">
                     <span class="text-3xl font-extrabold text-gray-800">OD<span class="text-orange-600">YM</span></span>
                 </a>
             </div>
             
             <!-- Navegación -->
             <nav class="hidden md:flex space-x-8">
-                <a href="index.html" class="text-gray-700 hover:text-orange-600 font-medium transition duration-300">Inicio</a>
-                <a href="products.html" class="text-gray-700 hover:text-orange-600 font-medium transition duration-300">Productos</a>
+                <a href="../index.html" class="text-gray-700 hover:text-orange-600 font-medium transition duration-300">Inicio</a>
+                <a href="../products.html" class="text-gray-700 hover:text-orange-600 font-medium transition duration-300">Productos</a>
                 <div class="relative group">
                     <a href="#" class="text-gray-700 hover:text-orange-600 font-medium transition duration-300 flex items-center">
                         Categorías <i class="fas fa-chevron-down ml-1 text-xs"></i>
                     </a>
                     <div class="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-2 z-20 hidden group-hover:block">
-                        <a href="products.html?category=pesas" class="block px-4 py-2 text-gray-700 hover:bg-orange-100 hover:text-orange-600">Pesas</a>
-                        <a href="products.html?category=maquinas" class="block px-4 py-2 text-gray-700 hover:bg-orange-100 hover:text-orange-600">Máquinas</a>
-                        <a href="products.html?category=accesorios" class="block px-4 py-2 text-gray-700 hover:bg-orange-100 hover:text-orange-600">Accesorios</a>
-                        <a href="products.html?category=suplementos" class="block px-4 py-2 text-gray-700 hover:bg-orange-100 hover:text-orange-600">Suplementos</a>
+                        <a href="../products.html?category=pesas" class="block px-4 py-2 text-gray-700 hover:bg-orange-100 hover:text-orange-600">Pesas</a>
+                        <a href="../products.html?category=maquinas" class="block px-4 py-2 text-gray-700 hover:bg-orange-100 hover:text-orange-600">Máquinas</a>
+                        <a href="../products.html?category=accesorios" class="block px-4 py-2 text-gray-700 hover:bg-orange-100 hover:text-orange-600">Accesorios</a>
+                        <a href="../products.html?category=suplementos" class="block px-4 py-2 text-gray-700 hover:bg-orange-100 hover:text-orange-600">Suplementos</a>
                     </div>
                 </div>
-                <a href="contact.html" class="text-gray-700 hover:text-orange-600 font-medium transition duration-300">Contacto</a>
+                <a href="../contact.html" class="text-gray-700 hover:text-orange-600 font-medium transition duration-300">Contacto</a>
             </nav>
             
             <!-- Iconos de usuario y carrito -->
             <div class="flex items-center space-x-4">
-                <button class="user-auth-button text-gray-700 hover:text-orange-600 transition duration-300">
-    <i class="fas fa-user text-xl"></i>
-</button>
-                <button class="text-gray-700 hover:text-orange-600 transition duration-300 relative" onclick="toggleCart()">
-                    <i class="fas fa-shopping-cart text-xl"></i>
-                    <span id="cartCount" class="cart-item-count hidden">0</span>
-                </button>
+                <!-- Usuario no autenticado -->
+                <div id="guestActions" class="hidden">
+                    <a href="../auth/login.html" class="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition duration-300">
+                        Iniciar Sesión
+                    </a>
+                </div>
+
+                <!-- Usuario autenticado -->
+                <div id="userActions" class="hidden flex items-center space-x-4">
+                    <!-- Perfil de usuario -->
+                    <div class="relative">
+                        <button id="userMenuBtn" class="flex items-center space-x-2 text-gray-700 hover:text-orange-600 transition duration-300">
+                            <div id="userAvatar" class="w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center text-sm font-medium"></div>
+                            <span id="userName" class="text-sm font-medium"></span>
+                        </button>
+                        
+                        <!-- Menú desplegable de usuario -->
+                        <div id="userDropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20 hidden">
+                            <div class="px-4 py-2 border-b border-gray-200">
+                                <p id="userFullName" class="font-medium text-gray-800"></p>
+                                <p id="userEmail" class="text-sm text-gray-600"></p>
+                                <p id="userSubscription" class="text-xs text-orange-600 mt-1"></p>
+                            </div>
+                            <a href="../account/profile.html" class="block px-4 py-2 text-gray-700 hover:bg-orange-100 hover:text-orange-600">
+                                <i class="fas fa-user-edit mr-2"></i>Editar Perfil
+                            </a>
+                            <a href="../account/orders.html" class="block px-4 py-2 text-gray-700 hover:bg-orange-100 hover:text-orange-600">
+                                <i class="fas fa-shopping-bag mr-2"></i>Mis Pedidos
+                            </a>
+                            <button onclick="AuthService.logout()" class="w-full text-left px-4 py-2 text-gray-700 hover:bg-orange-100 hover:text-orange-600">
+                                <i class="fas fa-sign-out-alt mr-2"></i>Cerrar Sesión
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Carrito -->
+                    <div class="relative">
+                        <button id="cartBtn" class="text-gray-700 hover:text-orange-600 transition duration-300 relative">
+                            <i class="fas fa-shopping-cart text-xl"></i>
+                            <span id="cartCount" class="absolute -top-2 -right-2 bg-orange-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span>
+                        </button>
+
+                        <!-- Menú desplegable del carrito -->
+                        <div id="cartDropdown" class="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 z-20 hidden">
+                            <div class="px-4 py-2 border-b border-gray-200">
+                                <h3 class="font-medium text-gray-800">Carrito de Compras</h3>
+                            </div>
+                            <div id="cartItems" class="max-h-96 overflow-y-auto">
+                                <!-- Los items del carrito se cargarán aquí -->
+                                <div class="p-4 text-center text-gray-500">
+                                    El carrito está vacío
+                                </div>
+                            </div>
+                            <div class="p-4 border-t border-gray-200">
+                                <div class="flex justify-between mb-4">
+                                    <span class="font-medium">Total:</span>
+                                    <span id="cartTotal" class="font-bold">$0.00</span>
+                                </div>
+                                <button onclick="window.location.href='../checkout.html'" class="w-full bg-orange-500 text-white py-2 rounded-md hover:bg-orange-600 transition duration-300">
+                                    Proceder al Pago
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botón menú móvil -->
                 <button class="md:hidden text-gray-700" id="mobileMenuBtn">
                     <i class="fas fa-bars text-xl"></i>
                 </button>
-                
             </div>
         </div>
         
         <!-- Menú móvil -->
         <div id="mobileMenu" class="md:hidden hidden pt-4 pb-2">
-            <a href="index.html" class="block py-2 text-gray-700 hover:text-orange-600 font-medium">Inicio</a>
-            <a href="products.html" class="block py-2 text-gray-700 hover:text-orange-600 font-medium">Productos</a>
+            <a href="../index.html" class="block py-2 text-gray-700 hover:text-orange-600 font-medium">Inicio</a>
+            <a href="../products.html" class="block py-2 text-gray-700 hover:text-orange-600 font-medium">Productos</a>
             <div class="py-2">
                 <button class="flex items-center justify-between w-full text-gray-700 hover:text-orange-600 font-medium" onclick="toggleMobileCategories()">
                     Categorías <i class="fas fa-chevron-down ml-1 text-xs"></i>
                 </button>
                 <div id="mobileCategoriesMenu" class="hidden pl-4 mt-2">
-                    <a href="products.html?category=pesas" class="block py-2 text-gray-700 hover:text-orange-600">Pesas</a>
-                    <a href="products.html?category=maquinas" class="block py-2 text-gray-700 hover:text-orange-600">Máquinas</a>
-                    <a href="products.html?category=accesorios" class="block py-2 text-gray-700 hover:text-orange-600">Accesorios</a>
-                    <a href="products.html?category=suplementos" class="block py-2 text-gray-700 hover:text-orange-600">Suplementos</a>
+                    <a href="../products.html?category=pesas" class="block py-2 text-gray-700 hover:text-orange-600">Pesas</a>
+                    <a href="../products.html?category=maquinas" class="block py-2 text-gray-700 hover:text-orange-600">Máquinas</a>
+                    <a href="../products.html?category=accesorios" class="block py-2 text-gray-700 hover:text-orange-600">Accesorios</a>
+                    <a href="../products.html?category=suplementos" class="block py-2 text-gray-700 hover:text-orange-600">Suplementos</a>
                 </div>
             </div>
-            <a href="contact.html" class="block py-2 text-gray-700 hover:text-orange-600 font-medium">Contacto</a>
+            <a href="../contact.html" class="block py-2 text-gray-700 hover:text-orange-600 font-medium">Contacto</a>
         </div>
     </div>
 </header>
+
+<!-- Scripts -->
+<script src="https://kit.fontawesome.com/your-code.js" crossorigin="anonymous"></script>
+<script src="../assets/js/auth-service.js"></script>
+<script src="../assets/js/header.js"></script>
