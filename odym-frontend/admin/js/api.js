@@ -17,16 +17,27 @@ class ApiClient {
     };
 
     try {
+      console.log(`Making ${options.method || 'GET'} request to: ${url}`);
       const response = await fetch(url, config);
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Error en la petición');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('API Error Response:', {
+          status: response.status,
+          statusText: response.statusText,
+          url,
+          error: errorData
+        });
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       return await response.json();
     } catch (error) {
-      console.error('API Error:', error);
+      console.error('API Request Failed:', {
+        url,
+        method: options.method || 'GET',
+        error: error.message
+      });
       throw error;
     }
   }

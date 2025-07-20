@@ -5,4 +5,4 @@ const categorySchema = new Schema({
   description: { type: String }
 });
 
-export const Category = model('Category', categorySchema);
+export default model('Category', categorySchema);
