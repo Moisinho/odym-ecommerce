@@ -1,5 +1,3 @@
-// Gestión de productos en el panel de administración
-
 class ProductsManager {
   constructor() {
     this.products = [];
@@ -129,7 +127,7 @@ class ProductsManager {
       name: formData.get('name'),
       description: formData.get('description'),
       price: parseFloat(formData.get('price')),
-      price: parseInt(formData.get('stock')),
+      stock: parseInt(formData.get('stock')),
       categoryId: formData.get('category'),
       images: this.getProductImages()
     };
@@ -139,6 +137,7 @@ class ProductsManager {
       name: { required: true, label: 'Nombre', minLength: 3 },
       description: { required: false, label: 'Descripción' },
       price: { required: true, label: 'Precio', numeric: true, min: 0.01 },
+      stock: { required: true, label: 'Stock', numeric: true, min: 0 },
       categoryId: { required: true, label: 'Categoría' }
     });
 
@@ -191,13 +190,78 @@ class ProductsManager {
 
     for (let file of files) {
       if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          this.addImagePreview(e.target.result);
-        };
-        reader.readAsDataURL(file);
+        try {
+          showLoading();
+          const compressedImage = await this.compressImage(file);
+          this.addImagePreview(compressedImage);
+        } catch (error) {
+          showNotification('Error al procesar imagen: ' + error.message, 'error');
+        } finally {
+          hideLoading();
+        }
       }
     }
+  }
+
+  async compressImage(file, maxWidth = 800, maxHeight = 600, quality = 0.8) {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+
+      img.onload = () => {
+        // Calculate new dimensions
+        let { width, height } = img;
+        
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = (width * maxHeight) / height;
+            height = maxHeight;
+          }
+        }
+
+        // Set canvas dimensions
+        canvas.width = width;
+        canvas.height = height;
+
+        // Draw and compress
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Convert to base64 with compression
+        let compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+        
+        // Check size and compress further if needed (max ~1MB base64)
+        const maxSize = 1000000; // ~1MB in base64
+        let currentQuality = quality;
+        
+        while (compressedDataUrl.length > maxSize && currentQuality > 0.1) {
+          currentQuality -= 0.1;
+          compressedDataUrl = canvas.toDataURL('image/jpeg', currentQuality);
+        }
+        
+        // If still too large, reduce dimensions
+        if (compressedDataUrl.length > maxSize) {
+          const newWidth = Math.floor(width * 0.8);
+          const newHeight = Math.floor(height * 0.8);
+          canvas.width = newWidth;
+          canvas.height = newHeight;
+          ctx.drawImage(img, 0, 0, newWidth, newHeight);
+          compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        }
+        
+        resolve(compressedDataUrl);
+      };
+
+      img.onerror = () => reject(new Error('Error al cargar imagen'));
+      
+      // Create object URL for the image
+      img.src = URL.createObjectURL(file);
+    });
   }
 
   addImagePreview(src) {
@@ -225,7 +289,7 @@ class ProductsManager {
     document.getElementById('productName').value = this.currentProduct.name;
     document.getElementById('productDescription').value = this.currentProduct.description || '';
     document.getElementById('productPrice').value = this.currentProduct.price;
-    document.getElementById('productStock').value = this.currentStock.stock;
+    document.getElementById('productStock').value = this.currentProduct.stock;
     document.getElementById('productCategory').value = this.currentProduct.category?._id || '';
     
     // Limpiar y agregar imágenes
@@ -303,4 +367,4 @@ document.addEventListener('DOMContentLoaded', () => {
   if (window.location.pathname.includes('products.html')) {
     productsManager = new ProductsManager();
   }
-});
+}); 

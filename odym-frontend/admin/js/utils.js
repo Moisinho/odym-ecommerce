@@ -89,11 +89,11 @@ function validateForm(formData, rules) {
   for (const [field, rule] of Object.entries(rules)) {
     const value = formData[field];
     
-    if (rule.required && (!value || value.trim() === '')) {
+    if (rule.required && (!value || (typeof value === 'string' && value.trim() === '') || (typeof value !== 'string' && !value))) {
       errors[field] = `${rule.label || field} es requerido`;
     }
     
-    if (rule.minLength && value && value.length < rule.minLength) {
+    if (rule.minLength && value && typeof value === 'string' && value.length < rule.minLength) {
       errors[field] = `${rule.label || field} debe tener al menos ${rule.minLength} caracteres`;
     }
     
