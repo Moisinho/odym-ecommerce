@@ -6,6 +6,8 @@ services:
       - 27017:27017
     networks:
       - development
+    volumes:
+      - mongo-data:/data/db  # <--- Aquí se guarda la base de datos
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
@@ -22,6 +24,9 @@ services:
       ME_CONFIG_BASICAUTH: false
     networks:
       - development
+
+volumes:
+  mongo-data:
 
 networks:
   development:
