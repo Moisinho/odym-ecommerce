@@ -1,4 +1,5 @@
 let currentCategory = null;
+let products = [];
 
 // Cargar productos
 function loadProducts() {
@@ -9,16 +10,25 @@ function loadProducts() {
     
     let filteredProducts = products;
     
-    // Filtrar por categoría si es necesario
+    
     if (currentCategory) {
-        filteredProducts = products.filter(product => product.category === currentCategory);
-    }
+    filteredProducts = products.filter(product => {
+        return product.category?.name?.toLowerCase() === currentCategory.toLowerCase();
+    });
+}
+
     
     // Aplicar filtro de precio
     const priceRange = document.getElementById('priceRange');
     if (priceRange) {
+        
         const maxPrice = parseInt(priceRange.value);
+console.log('🔍 Filtro de precio (máx):', maxPrice);  // Asegúrate de ver este valor en consola
+
+        
         filteredProducts = filteredProducts.filter(product => product.price <= maxPrice);
+
+
     }
     
     // Aplicar ordenamiento
@@ -47,12 +57,14 @@ function loadProducts() {
         productCard.className = 'product-card bg-white rounded-lg shadow-md overflow-hidden';
         productCard.innerHTML = `
             <div class="relative">
-                <img src="${product.image}" alt="${product.name}" class="w-full h-48 object-contain bg-gray-100">
-                <span class="absolute top-2 right-2 bg-gray-800 text-white text-xs px-2 py-1 rounded-full">${product.category}</span>
+                <img src="${product.images[0]}" alt="${product.name}" ... >
+
+                <span class="absolute top-2 right-2 bg-gray-800 text-white text-xs px-2 py-1 rounded-full">${product.category.name}</span>
             </div>
             <div class="p-4">
                 <h3 class="font-semibold text-lg mb-2">${product.name}</h3>
                 <p class="text-orange-600 font-bold mb-4">$${product.price.toFixed(2)}</p>
+                
                 <div class="flex space-x-2">
                     <button class="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded transition duration-300" onclick="addToCart(${product.id})">
                         Añadir
@@ -85,9 +97,16 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('category-all').checked = false;
     }
     
-    // Cargar productos
+    // Cargar productos desde el backend antes de renderizar
+fetch('http://localhost:3000/api/products')
+
+  .then(response => response.json())
+  .then(data => {
+    products = data;
     loadProducts();
-    
+  })
+  .catch(error => console.error('Error cargando productos:', error));
+
     // Configurar filtros
     document.querySelectorAll('.category-filter').forEach(checkbox => {
         checkbox.addEventListener('change', function() {
@@ -106,12 +125,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Configurar rango de precio
     const priceRange = document.getElementById('priceRange');
-    if (priceRange) {
-        priceRange.addEventListener('input', function() {
-            document.getElementById('priceMax').textContent = `$${this.value}`;
-            loadProducts();
-        });
-    }
+if (priceRange) {
+    priceRange.addEventListener('input', function() {
+        document.getElementById('priceMax').textContent = `$${this.value}`;
+        loadProducts();  // 🔥 Esto es clave
+    });
+}
+
     
     // Configurar ordenamiento
     const sortBy = document.getElementById('sortBy');
@@ -131,4 +151,3 @@ function getCategoryName(category) {
     };
     return names[category] || 'Productos';
 }
-
