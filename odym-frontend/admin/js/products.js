@@ -120,66 +120,128 @@ class ProductsManager {
   }
 
   async handleSubmit(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(e.target);
-    const data = {
-      name: formData.get('name'),
-      description: formData.get('description'),
-      price: parseFloat(formData.get('price')),
-      stock: parseInt(formData.get('stock')),
-      categoryId: formData.get('category'),
-      images: this.getProductImages()
-    };
+  e.preventDefault();
+  
+  const formData = new FormData(e.target);
+  const data = {
+    name: formData.get('name'),
+    description: formData.get('description'),
+    price: parseFloat(formData.get('price')),
+    stock: parseInt(formData.get('stock')),
+    categoryId: formData.get('category')
+  };
 
-    // Validación
-    const errors = validateForm(data, {
-      name: { required: true, label: 'Nombre', minLength: 3 },
-      description: { required: false, label: 'Descripción' },
-      price: { required: true, label: 'Precio', numeric: true, min: 0.01 },
-      stock: { required: true, label: 'Stock', numeric: true, min: 0 },
-      categoryId: { required: true, label: 'Categoría' }
+  // Validación (mantén tu validación existente)
+  const errors = validateForm(data, {
+    name: { required: true, label: 'Nombre', minLength: 3 },
+    description: { required: false, label: 'Descripción' },
+    price: { required: true, label: 'Precio', numeric: true, min: 0.01 },
+    stock: { required: true, label: 'Stock', numeric: true, min: 0 },
+    categoryId: { required: true, label: 'Categoría' }
+  });
+
+  if (Object.keys(errors).length > 0) {
+    Object.entries(errors).forEach(([field, message]) => {
+      showNotification(message, 'error');
+    });
+    return;
+  }
+
+  try {
+    showLoading();
+    
+    // Procesar imágenes
+    const imageInput = document.getElementById('productImages');
+    const imagePreviews = this.getProductImages();
+    
+    // Si hay nuevas imágenes seleccionadas
+    if (imageInput.files.length > 0) {
+      data.images = [];
+      
+      // Procesar imágenes nuevas
+      for (let file of imageInput.files) {
+        if (file.type.startsWith('image/')) {
+          const compressedImage = await this.compressImage(file);
+          const imgUrl = await this.uploadImageToImgBB(compressedImage);
+          data.images.push(imgUrl);
+        }
+      }
+      
+      // Mantener imágenes existentes si estamos editando
+      if (this.currentProduct) {
+        data.images = [...data.images, ...imagePreviews.filter(img => 
+          img.startsWith('http') && // Solo URLs (no base64)
+          !img.includes('data:image') // Excluir base64
+        )];
+      }
+    } else {
+      // Usar solo imágenes existentes (para edición)
+      data.images = imagePreviews;
+    }
+
+    if (this.currentProduct) {
+      // Actualizar producto
+      const response = await api.updateProduct(this.currentProduct._id, data);
+      if (!response) throw new Error('No se recibió respuesta del servidor');
+      showNotification('Producto actualizado exitosamente');
+    } else {
+      // Crear nuevo producto
+      await api.createProduct(data);
+      showNotification('Producto creado exitosamente');
+    }
+
+    this.closeModal();
+    await this.loadProducts();
+  } catch (error) {
+    console.error('Error en handleSubmit:', error);
+    showNotification(`Error: ${error.message}`, 'error');
+  } finally {
+    hideLoading();
+  }
+}
+async uploadImageToImgBB(base64Image) {
+  try {
+    const formData = new FormData();
+    formData.append('key', process.env.IMGBB_API_KEY); // Asegúrate de tener esta variable configurada
+    formData.append('image', base64Image.replace(/^data:image\/\w+;base64,/, ''));
+
+    const response = await fetch('https://api.imgbb.com/1/upload', {
+      method: 'POST',
+      body: formData,
+      timeout: 15000
     });
 
-    if (Object.keys(errors).length > 0) {
-      Object.entries(errors).forEach(([field, message]) => {
-        showNotification(message, 'error');
-      });
-      return;
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
     }
 
-    try {
-      showLoading();
-      
-      if (this.currentProduct) {
-        // Actualizar
-        await api.updateProduct(this.currentProduct._id, data);
-        showNotification('Producto actualizado exitosamente');
-      } else {
-        // Crear
-        await api.createProduct(data);
-        showNotification('Producto creado exitosamente');
-      }
-
-      this.closeModal();
-      await this.loadProducts();
-    } catch (error) {
-      showNotification('Error: ' + error.message, 'error');
-    } finally {
-      hideLoading();
+    const result = await response.json();
+    if (!result.data || !result.data.url) {
+      throw new Error('No se recibió URL de imagen desde imgBB');
     }
+
+    return result.data.url;
+  } catch (error) {
+    console.error('Error al subir imagen:', error);
+    throw new Error(`Error al subir imagen: ${error.message}`);
   }
+}
 
   getProductImages() {
-    const images = [];
-    const imageInputs = document.querySelectorAll('.product-image-input');
-    imageInputs.forEach(input => {
-      if (input.value && input.value.trim()) {
+  const images = [];
+  const imageInputs = document.querySelectorAll('.product-image-input');
+  
+  imageInputs.forEach(input => {
+    if (input.value && input.value.trim()) {
+      // Solo incluir si es URL (http/https) o base64 válido
+      if (input.value.startsWith('http') || input.value.startsWith('data:image')) {
         images.push(input.value);
       }
-    });
-    return images;
-  }
+    }
+  });
+  
+  return images;
+}
 
   async handleImageUpload(e) {
     const files = e.target.files;
@@ -282,8 +344,10 @@ class ProductsManager {
   }
 
   async editProduct(id) {
+  try {
+    showLoading();
     this.currentProduct = this.products.find(p => p._id === id);
-    if (!this.currentProduct) return;
+    if (!this.currentProduct) throw new Error('Producto no encontrado');
 
     // Llenar formulario
     document.getElementById('productName').value = this.currentProduct.name;
@@ -292,24 +356,38 @@ class ProductsManager {
     document.getElementById('productStock').value = this.currentProduct.stock;
     document.getElementById('productCategory').value = this.currentProduct.category?._id || '';
     
-    // Limpiar y agregar imágenes
+    // Limpiar y agregar imágenes existentes
     const imagesContainer = document.getElementById('productImagesContainer');
     if (imagesContainer) {
       imagesContainer.innerHTML = '';
-      this.currentProduct.images?.forEach(img => {
-        this.addImagePreview(img);
-      });
+      if (this.currentProduct.images?.length > 0) {
+        this.currentProduct.images.forEach(img => {
+          // Solo mostrar imágenes que sean URLs válidas
+          if (img.startsWith('http')) {
+            this.addImagePreview(img);
+          }
+        });
+      }
     }
 
     // Cambiar título del modal
     document.getElementById('productModalTitle').textContent = 'Editar Producto';
     
     this.showModal();
+  } catch (error) {
+    showNotification(`Error al cargar producto: ${error.message}`, 'error');
+    console.error('Error en editProduct:', error);
+  } finally {
+    hideLoading();
   }
+}
 
   async deleteProduct(id) {
     const product = this.products.find(p => p._id === id);
-    if (!product) return;
+    if (!product) {
+      showNotification('Producto no encontrado', 'error');
+      return;
+    }
 
     showConfirmDialog(
       `¿Estás seguro de eliminar el producto "${product.name}"?`,
@@ -320,6 +398,7 @@ class ProductsManager {
           showNotification('Producto eliminado exitosamente');
           await this.loadProducts();
         } catch (error) {
+          console.error('Error en deleteProduct:', error);
           showNotification('Error al eliminar: ' + error.message, 'error');
         } finally {
           hideLoading();

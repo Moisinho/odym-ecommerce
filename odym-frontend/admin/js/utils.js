@@ -54,7 +54,8 @@ function hideLoading() {
 }
 
 // Confirmación de eliminación
-function showConfirmDialog(message, onConfirm) {
+// Confirmación de eliminación mejorada
+function showConfirmDialog(message, onConfirmCallback) {
   const modal = document.createElement('div');
   modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
   modal.innerHTML = `
@@ -62,16 +63,37 @@ function showConfirmDialog(message, onConfirm) {
       <h3 class="text-lg font-semibold mb-4">Confirmar eliminación</h3>
       <p class="text-gray-600 mb-6">${message}</p>
       <div class="flex justify-end space-x-3">
-        <button class="px-4 py-2 text-gray-600 hover:text-gray-800" onclick="this.closest('.fixed').remove()">
+        <button id="cancelConfirmBtn" class="px-4 py-2 text-gray-600 hover:text-gray-800">
           Cancelar
         </button>
-        <button class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700" onclick="this.closest('.fixed').remove(); onConfirm()">
+        <button id="confirmActionBtn" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
           Eliminar
         </button>
       </div>
     </div>
   `;
+  
   document.body.appendChild(modal);
+  
+  // Agregar event listeners de forma segura
+  const cancelBtn = modal.querySelector('#cancelConfirmBtn');
+  const confirmBtn = modal.querySelector('#confirmActionBtn');
+  
+  const removeModal = () => modal.remove();
+  
+  cancelBtn.addEventListener('click', removeModal);
+  
+  confirmBtn.addEventListener('click', () => {
+    removeModal();
+    onConfirmCallback();
+  });
+  
+  // Cerrar al hacer clic fuera del modal
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      removeModal();
+    }
+  });
 }
 
 // Formatear moneda

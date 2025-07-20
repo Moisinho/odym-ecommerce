@@ -32,8 +32,11 @@ import stripe from './services/stripe.service.js';
 const app = Fastify({ logger: true });
 
 // Register CORS plugin to allow cross-origin requests
+// Register CORS plugin with proper configuration
 app.register(cors, {
-  origin: '*', // Allow all origins, adjust as needed for security
+  origin: true, // Permite el origen actual (mejor que '*' para desarrollo)
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']// Añade PUT aquí
+  
 });
 
 // Register content type parser for JSON
