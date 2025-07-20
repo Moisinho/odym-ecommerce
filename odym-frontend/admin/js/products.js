@@ -154,29 +154,35 @@ class ProductsManager {
     const imageInput = document.getElementById('productImages');
     const imagePreviews = this.getProductImages();
     
-    // Si hay nuevas imágenes seleccionadas
-    if (imageInput.files.length > 0) {
+    // Procesar imágenes - el backend se encargará de subirlas a imgBB
+    if (imageInput.files.length > 0 || imagePreviews.length > 0) {
       data.images = [];
       
-      // Procesar imágenes nuevas
-      for (let file of imageInput.files) {
-        if (file.type.startsWith('image/')) {
-          const compressedImage = await this.compressImage(file);
-          const imgUrl = await this.uploadImageToImgBB(compressedImage);
-          data.images.push(imgUrl);
+      // Procesar nuevas imágenes (como base64)
+      if (imageInput.files.length > 0) {
+        for (let file of imageInput.files) {
+          if (file.type.startsWith('image/')) {
+            const compressedImage = await this.compressImage(file);
+            data.images.push(compressedImage);
+          }
         }
       }
       
-      // Mantener imágenes existentes si estamos editando
-      if (this.currentProduct) {
-        data.images = [...data.images, ...imagePreviews.filter(img => 
+      // Mantener imágenes existentes (URLs) si estamos editando
+      if (this.currentProduct && imagePreviews.length > 0) {
+        const existingUrls = imagePreviews.filter(img => 
           img.startsWith('http') && // Solo URLs (no base64)
           !img.includes('data:image') // Excluir base64
-        )];
+        );
+        data.images = [...data.images, ...existingUrls];
+      }
+      
+      // Si solo hay imágenes existentes y no hay nuevas
+      if (data.images.length === 0 && imagePreviews.length > 0) {
+        data.images = imagePreviews;
       }
     } else {
-      // Usar solo imágenes existentes (para edición)
-      data.images = imagePreviews;
+      data.images = [];
     }
 
     if (this.currentProduct) {
@@ -199,33 +205,8 @@ class ProductsManager {
     hideLoading();
   }
 }
-async uploadImageToImgBB(base64Image) {
-  try {
-    const formData = new FormData();
-    formData.append('key', process.env.IMGBB_API_KEY); // Asegúrate de tener esta variable configurada
-    formData.append('image', base64Image.replace(/^data:image\/\w+;base64,/, ''));
-
-    const response = await fetch('https://api.imgbb.com/1/upload', {
-      method: 'POST',
-      body: formData,
-      timeout: 15000
-    });
-
-    if (!response.ok) {
-      throw new Error(`Error ${response.status}: ${response.statusText}`);
-    }
-
-    const result = await response.json();
-    if (!result.data || !result.data.url) {
-      throw new Error('No se recibió URL de imagen desde imgBB');
-    }
-
-    return result.data.url;
-  } catch (error) {
-    console.error('Error al subir imagen:', error);
-    throw new Error(`Error al subir imagen: ${error.message}`);
-  }
-}
+  // This method is no longer needed as image upload is handled by the backend
+  // async uploadImageToImgBB(base64Image) { ... }
 
   getProductImages() {
   const images = [];

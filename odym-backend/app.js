@@ -11,8 +11,7 @@ import productRoutes from './routes/api/product.routes.js';
 import cartRoutes from './routes/api/cart.routes.js';
 import orderRoutes from './routes/api/order.routes.js';
 import productsByIdsRoutes from './routes/api/products-by-ids.js';
-import checkoutWebRoutes from './routes/web/checkout.routes.js';
-import homeRoutes from './routes/web/home.routes.js';
+
 import clientesRoutes from './src/routes/clientes.routes.js';
 
 import cors from '@fastify/cors';
@@ -103,9 +102,8 @@ app.register(import('@fastify/static'), {
     prefix: '/static/',
 });
 
-// Register web routes
-app.register(homeRoutes, { prefix: '/' });
-app.register(checkoutWebRoutes, { prefix: '/checkout' });
+
+
 
 app.setNotFoundHandler((request, reply) => {
     console.log(`NotFoundHandler called for ${request.method} ${request.url}`);
