@@ -12,6 +12,8 @@ import checkoutWebRoutes from './routes/web/checkout.routes.js';
 import homeRoutes from './routes/web/home.routes.js';
 import clientesRoutes from './src/routes/clientes.routes.js';
 
+import cors from '@fastify/cors';
+
 config(); // Load environment variables from .env file
 
 // Removed duplicate import and call of config()
@@ -28,6 +30,11 @@ const __dirname = path.dirname(__filename);
 import stripe from './services/stripe.service.js';
 
 const app = Fastify({ logger: true });
+
+// Register CORS plugin to allow cross-origin requests
+app.register(cors, {
+  origin: '*', // Allow all origins, adjust as needed for security
+});
 
 // Register content type parser for JSON
 app.addContentTypeParser('application/json', { parseAs: 'string' }, function (req, body, done) {

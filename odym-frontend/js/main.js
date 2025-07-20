@@ -1,16 +1,3 @@
-// Datos de productos
-const products = [
-    {
-        id: 1,
-        name: "Mancuernas Ajustables 40kg",
-        price: 1299.99,
-        category: "pesas",
-        description: "Set de mancuernas ajustables de alta calidad con peso máximo de 40kg por mancuerna. Incluye discos de diferentes pesos y barras cromadas con sistema de bloqueo rápido.",
-        image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'%3E%3Crect width='300' height='300' fill='%23f3f4f6'/%3E%3Cpath d='M50 150 L100 150 L110 140 L190 140 L200 150 L250 150 M50 150 L50 160 L100 160 L110 170 L190 170 L200 160 L250 160 L250 150 M50 150 L50 160' stroke='%23333' stroke-width='8' fill='none'/%3E%3Ccircle cx='80' cy='155' r='20' fill='%23666'/%3E%3Ccircle cx='130' cy='155' r='15' fill='%23666'/%3E%3Ccircle cx='170' cy='155' r='15' fill='%23666'/%3E%3Ccircle cx='220' cy='155' r='20' fill='%23666'/%3E%3C/svg%3E"
-    },
-    // ... (resto de los productos)
-];
-
 // Variables globales
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
 let currentProduct = null;
@@ -28,40 +15,44 @@ function filterByCategory(category) {
 }
 
 // Cargar productos destacados
-function loadFeaturedProducts() {
+async function loadFeaturedProducts() {
     const featuredProducts = document.getElementById('featuredProducts');
     if (!featuredProducts) return;
-    
-    featuredProducts.innerHTML = '';
-    
-    // Obtener un producto de cada categoría
-    const categories = ['pesas', 'maquinas', 'accesorios', 'suplementos'];
-    categories.forEach(category => {
-        const product = products.find(p => p.category === category);
-        if (product) {
+
+    try {
+        const response = await fetch('/api/products');
+        const products = await response.json();
+
+        console.log('Fetched products:', products);
+
+        featuredProducts.innerHTML = '';
+
+        products.forEach(product => {
             const productCard = document.createElement('div');
             productCard.className = 'product-card bg-white rounded-lg shadow-md overflow-hidden';
             productCard.innerHTML = `
                 <div class="relative">
-                    <img src="${product.image}" alt="${product.name}" class="w-full h-48 object-contain bg-gray-100">
-                    <span class="absolute top-2 right-2 bg-gray-800 text-white text-xs px-2 py-1 rounded-full">${product.category}</span>
+                    <img src="${product.images[0] || '/assets/img/placeholder-product.png'}" alt="${product.name}" class="w-full h-48 object-contain bg-gray-100">
+                    <span class="absolute top-2 right-2 bg-gray-800 text-white text-xs px-2 py-1 rounded-full">${product.category.name}</span>
                 </div>
                 <div class="p-4">
                     <h3 class="font-semibold text-lg mb-2">${product.name}</h3>
                     <p class="text-orange-600 font-bold mb-4">$${product.price.toFixed(2)}</p>
                     <div class="flex space-x-2">
-                        <button class="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded transition duration-300" onclick="addToCart(${product.id})">
+                        <button class="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded transition duration-300" onclick="addToCart('${product._id}')">
                             Añadir
                         </button>
-                        <button class="flex-1 bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded transition duration-300" onclick="viewProduct(${product.id})">
+                        <button class="flex-1 bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded transition duration-300" onclick="viewProduct('${product._id}')">
                             Ver
                         </button>
                     </div>
                 </div>
             `;
             featuredProducts.appendChild(productCard);
-        }
-    });
+        });
+    } catch (error) {
+        console.error('Error loading featured products:', error);
+    }
 }
 
 // Ver detalle de producto
