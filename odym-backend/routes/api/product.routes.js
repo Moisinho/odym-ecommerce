@@ -1,11 +1,53 @@
-import { createProduct, deleteProduct, getProducts, updateProduct } from '../../services/product.service.js';
+import { 
+  createProduct, 
+  deleteProduct, 
+  getProducts, 
+  updateProduct, 
+  updateProductStock, 
+  checkStockAvailability,
+  getProductsWithStock 
+} from '../../services/product.service.js';
 import { uploadImage } from '../../services/imgbb.service.js';
 
 async function productRoutes(fastify, options) {
+  // Obtener todos los productos
   fastify.get('/', async (request, reply) => {
     console.log('GET /api/products called');
     const products = await getProducts();
     reply.send(products);
+  });
+
+  // Obtener productos con stock disponible
+  fastify.get('/available', async (request, reply) => {
+    console.log('GET /api/products/available called');
+    const products = await getProductsWithStock();
+    reply.send(products);
+  });
+
+  // Verificar disponibilidad de stock
+  fastify.get('/:id/check-stock', async (request, reply) => {
+    const { id } = request.params;
+    const { quantity } = request.query;
+    
+    try {
+      const result = await checkStockAvailability(id, parseInt(quantity) || 1);
+      reply.send(result);
+    } catch (error) {
+      reply.status(400).send({ error: error.message });
+    }
+  });
+
+  // Actualizar stock de producto
+  fastify.put('/:id/stock', async (request, reply) => {
+    const { id } = request.params;
+    const { quantity } = request.body;
+    
+    try {
+      const product = await updateProductStock(id, quantity);
+      reply.send(product);
+    } catch (error) {
+      reply.status(400).send({ error: error.message });
+    }
   });
 
   fastify.post('/', async (request, reply) => {
@@ -63,6 +105,27 @@ async function productRoutes(fastify, options) {
         return;
       }
       reply.status(200).send({ message: 'Product deleted successfully' });
+    } catch (error) {
+      reply.status(400).send({ error: error.message });
+    }
+  });
+
+  // Obtener producto por ID
+  fastify.get('/:id', async (request, reply) => {
+    const { id } = request.params;
+    console.log('GET /api/products/:id called with id:', id);
+    
+    try {
+      const product = await getProducts().then(products => 
+        products.find(p => p._id === id)
+      );
+      
+      if (!product) {
+        reply.status(404).send({ error: 'Product not found' });
+        return;
+      }
+      
+      reply.send(product);
     } catch (error) {
       reply.status(400).send({ error: error.message });
     }

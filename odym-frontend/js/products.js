@@ -151,4 +151,3 @@ function getCategoryName(category) {
     };
     return names[category] || 'Productos';
 }
-

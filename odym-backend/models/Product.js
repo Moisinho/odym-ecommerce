@@ -10,7 +10,10 @@ const productSchema = new mongoose.Schema({
     ref: 'Category', 
     required: true 
   },
-  images: [{ type: String }] // URLs de imágenes
+  images: [{ type: String }], // URLs de imágenes
+  stock: { type: Number, default: 0, min: 0 } // Stock disponible
+}, {
+  timestamps: true // Agrega createdAt y updatedAt automáticamente
 });
 
 export default mongoose.model('Product', productSchema);

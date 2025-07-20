@@ -1,4 +1,3 @@
-// Variables globales
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
 let currentProduct = null;
 
@@ -63,10 +62,11 @@ function viewProduct(productId) {
         
         // Actualizar modal
         document.getElementById('modalProductTitle').textContent = product.name;
-        document.getElementById('modalProductImage').src = product.image;
-        document.getElementById('modalProductCategory').textContent = product.category;
+        document.getElementById('modalProductImage').src = product.images[0];
+        document.getElementById('modalProductCategory').textContent = product.category.name;
         document.getElementById('modalProductPrice').textContent = `$${product.price.toFixed(2)}`;
         document.getElementById('modalProductDescription').textContent = product.description;
+        document.getElementById('stock').textContent = product.stock;
         document.getElementById('productQuantity').value = 1;
         
         // Configurar botones
