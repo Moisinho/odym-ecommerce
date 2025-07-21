@@ -3,16 +3,14 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from 'dotenv';
 import { connect } from './config/db.js';
-import authRoutes from './routes/api/auth.routes.js';
 import categoryRoutes from './routes/api/category.routes.js';
+import customerRoutes from './routes/api/customer.routes.js';
 import checkoutRoutes from './routes/api/checkout.js';
 import paymentRoutes from './routes/api/payment.routes.js';
 import productRoutes from './routes/api/product.routes.js';
 import cartRoutes from './routes/api/cart.routes.js';
 import orderRoutes from './routes/api/order.routes.js';
 import productsByIdsRoutes from './routes/api/products-by-ids.js';
-
-import clientesRoutes from './src/routes/clientes.routes.js';
 
 import cors from '@fastify/cors';
 
@@ -87,10 +85,10 @@ app.decorate('db', {
 });
 
 // Register API routes
-app.register(clientesRoutes, { prefix: '/api/clientes' });
 app.register(productRoutes, { prefix: '/api/products' });
 app.register(categoryRoutes, { prefix: '/api/categories' });
 app.register(cartRoutes, { prefix: '/api/cart' });
+app.register(customerRoutes, { prefix: '/api/customers' });
 app.register(orderRoutes, { prefix: '/api/orders' });
 app.register(checkoutRoutes, { prefix: '/api/checkout' });
 app.register(paymentRoutes, { prefix: '/api/payment' });

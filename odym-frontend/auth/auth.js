@@ -283,12 +283,19 @@
             body: JSON.stringify(dataToSend)
           });
 
-          if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Error al iniciar sesión');
+          let data;
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            data = await response.json();
+          } else {
+            const text = await response.text();
+            throw new Error('Respuesta inesperada del servidor: ' + text);
           }
 
-          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.error || 'Error al iniciar sesión');
+          }
+
           // Guardar datos del usuario
           AuthService.setUser(data.customer);
           // Redirigir a la página principal

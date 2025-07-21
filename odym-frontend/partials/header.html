@@ -28,9 +28,13 @@
             
             <!-- Iconos de usuario y carrito -->
             <div class="flex items-center space-x-4">
-                <button class="user-auth-button text-gray-700 hover:text-orange-600 transition duration-300">
-    <i class="fas fa-user text-xl"></i>
-</button>
+                <div class="relative">
+                    <button class="user-auth-button text-gray-700 hover:text-orange-600 transition duration-300">
+                        <i class="fas fa-user text-xl"></i>
+                    </button>
+                    <!-- Menú contextual de usuario -->
+                    <div id="userMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-2 z-40"></div>
+                </div>
                 <button class="text-gray-700 hover:text-orange-600 transition duration-300 relative" onclick="toggleCart()">
                     <i class="fas fa-shopping-cart text-xl"></i>
                     <span id="cartCount" class="cart-item-count hidden">0</span>
