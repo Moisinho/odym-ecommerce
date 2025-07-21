@@ -149,6 +149,14 @@
     </div>
   </div>
 </body>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
+<script>
+  // Verificar que bcrypt se haya cargado correctamente
+  if (typeof bcrypt === 'undefined') {
+    console.error('Error: bcrypt no se ha cargado correctamente');
+  }
+</script>
+<script src="../assets/js/auth-service.js"></script>
 <script src="auth.js"></script>
 </html>
