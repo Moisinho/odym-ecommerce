@@ -298,8 +298,13 @@
 
           // Guardar datos del usuario
           AuthService.setUser(data.customer);
-          // Redirigir a la página principal
-          window.location.href = 'http://localhost:5500/odym-frontend/';
+
+          // Redirección basada en el rol
+          if (data.customer && data.customer.role === 'admin') {
+            window.location.href = '/odym-frontend/admin/'; // Redirigir al panel de admin
+          } else {
+            window.location.href = '/odym-frontend/'; // Redirigir a la página principal para clientes
+          }
         } catch (error) {
           console.error('Error al iniciar sesión:', error);
           alert(error.message || 'Hubo un error al iniciar sesión. Por favor, intente nuevamente.');

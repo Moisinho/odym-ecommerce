@@ -1,3 +1,48 @@
+/**
+ * Carga un componente HTML parcial en un elemento contenedor.
+ * @param {string} containerId - El ID del elemento contenedor.
+ * @param {string} filePath - La ruta al archivo HTML parcial.
+ * @param {function} callback - Una función opcional a ejecutar después de cargar el parcial.
+ */
+function loadPartial(containerId, filePath, callback) {
+    fetch(filePath)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`No se pudo cargar el parcial: ${filePath}`);
+            }
+            return response.text();
+        })
+        .then(html => {
+            const container = document.getElementById(containerId);
+            if (container) {
+                container.innerHTML = html;
+                if (callback && typeof callback === 'function') {
+                    callback();
+                }
+            } else {
+                console.error(`El contenedor '${containerId}' no fue encontrado.`);
+            }
+        })
+        .catch(error => console.error('Error al cargar el parcial:', error));
+}
+
+/**
+ * Marca el enlace activo en la barra lateral de navegación.
+ * @param {string} currentPage - El nombre del archivo de la página actual (e.g., 'index.html').
+ */
+function setActiveLink(currentPage) {
+    const links = document.querySelectorAll('#sidebar-container .sidebar-link');
+    links.forEach(link => {
+        // Limpiar clases activas previas
+        link.classList.remove('bg-orange-50', 'text-orange-600', 'border-r-4', 'border-orange-600');
+
+        const href = link.getAttribute('href');
+        if (href && href.endsWith(currentPage)) {
+            link.classList.add('bg-orange-50', 'text-orange-600', 'border-r-4', 'border-orange-600');
+        }
+    });
+}
+
 let currentProduct = null;
 
 // Funciones de navegación
