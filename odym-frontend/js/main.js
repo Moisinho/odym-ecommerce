@@ -56,7 +56,64 @@ async function loadFeaturedProducts() {
 
 document.addEventListener('DOMContentLoaded', fetchAndRenderFeaturedProducts);
 
-// Ver detalle de producto
+// Stripe Checkout Integration
+async function initiateStripeCheckout(productId, quantity = 1) {
+  try {
+    // Show loading state
+    const buyNowBtn = document.getElementById('buyNowBtn');
+    if (buyNowBtn) {
+      buyNowBtn.disabled = true;
+      buyNowBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
+    }
+
+    // Get user email (from auth or prompt)
+    let customerEmail = localStorage.getItem('userEmail');
+    if (!customerEmail) {
+      customerEmail = prompt('Por favor ingresa tu correo electrónico para continuar con el pago:');
+      if (!customerEmail) {
+        throw new Error('Email requerido para el pago');
+      }
+    }
+
+    // Create checkout session
+    const checkoutResponse = await fetch('http://localhost:3000/api/create-checkout-session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        items: [{
+          productId: productId,
+          quantity: quantity
+        }],
+        customerEmail: customerEmail,
+        userId: localStorage.getItem('userId') || 'guest'
+      })
+    });
+
+    if (!checkoutResponse.ok) {
+      const error = await checkoutResponse.json();
+      throw new Error(error.message || 'Error al crear sesión de checkout');
+    }
+
+    const { url } = await checkoutResponse.json();
+
+    // Redirect to Stripe Checkout
+    window.location.href = url;
+
+  } catch (error) {
+    console.error('Checkout error:', error);
+    alert('Error: ' + error.message);
+    
+    // Reset button state
+    const buyNowBtn = document.getElementById('buyNowBtn');
+    if (buyNowBtn) {
+      buyNowBtn.disabled = false;
+      buyNowBtn.innerHTML = '<i class="fas fa-bolt mr-2"></i>Comprar ahora';
+    }
+  }
+}
+
 // Ver detalle de producto
 function viewProduct(productId) {
   // Usamos la variable global window.featuredProducts
@@ -87,14 +144,12 @@ function viewProduct(productId) {
       closeProductModal();
     };
     
+    // Listener del botón "Comprar ahora" - DIRECTO A STRIPE
     document.getElementById('buyNowBtn').onclick = () => {
       const quantity = parseInt(document.getElementById('productQuantity').value);
-      addToCart(product._id, quantity);
-      closeProductModal();
-      toggleCart();
-      const checkoutBtn = document.getElementById('checkoutBtn');
-      if (checkoutBtn) checkoutBtn.click();
+      initiateStripeCheckout(product._id, quantity);
     };
+
     
     // Mostrar modal
     modal.classList.add('active');

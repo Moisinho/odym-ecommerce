@@ -6,6 +6,7 @@ import { connect } from './config/db.js';
 import categoryRoutes from './routes/api/category.routes.js';
 import customerRoutes from './routes/api/customer.routes.js';
 import checkoutRoutes from './routes/api/checkout.js';
+
 import paymentRoutes from './routes/api/payment.routes.js';
 import productRoutes from './routes/api/product.routes.js';
 import cartRoutes from './routes/api/cart.routes.js';
@@ -18,6 +19,7 @@ import cors from '@fastify/cors';
 import User from './models/User.js';
 import Product from './models/Product.js';
 import Order from './models/Order.js';
+import Payment from './models/Payment.js';
 import Category from './models/Category.js';
 
 config(); // Load environment variables from .env file
@@ -81,6 +83,7 @@ app.decorate('db', {
   User,
   Product,
   Order,
+  Payment,
   Category
 });
 

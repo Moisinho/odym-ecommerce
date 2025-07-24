@@ -1,9 +1,8 @@
 import Order from '../models/Order.js';
+import Payment from '../models/Payment.js';
 import User from '../models/User.js';
 import Product from '../models/Product.js';
-import Stripe from 'stripe';
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+import stripe from './stripe.service.js';
 
 // Create order from cart
 export const createOrder = async (userId, shippingAddress) => {
@@ -209,6 +208,107 @@ export const createPaymentIntent = async (orderId) => {
     return paymentIntent;
   } catch (error) {
     throw new Error('Error creating payment intent: ' + error.message);
+  }
+};
+
+// Create order from Stripe session
+export const createOrderFromStripeSession = async (session) => {
+  try {
+    const { metadata } = session;
+    const items = JSON.parse(metadata.cart);
+    const userId = metadata.userId !== 'guest' ? metadata.userId : null;
+
+    // Get product details
+    const productIds = items.map(item => item.productId);
+    const products = await Product.find({ _id: { $in: productIds } });
+
+    // Prepare order items
+    const orderItems = items.map(item => {
+      const product = products.find(p => p._id.toString() === item.productId);
+      return {
+        productId: product._id,
+        name: product.name,
+        price: product.price,
+        quantity: item.quantity,
+        image: product.images?.[0] || ''
+      };
+    });
+
+    // Create basic shipping address from session
+    const shippingAddress = {
+      firstName: session.customer_details?.name?.split(' ')[0] || 'Customer',
+      lastName: session.customer_details?.name?.split(' ').slice(1).join(' ') || '',
+      email: session.customer_email,
+      phone: session.customer_details?.phone || '',
+      address: session.customer_details?.address?.line1 || '',
+      city: session.customer_details?.address?.city || '',
+      postalCode: session.customer_details?.address?.postal_code || '',
+      country: session.customer_details?.address?.country || 'US'
+    };
+
+    const order = new Order({
+      userId,
+      items: orderItems,
+      totalAmount: session.amount_total / 100, // Convert from cents
+      shippingAddress,
+      status: 'processing',
+      paymentStatus: 'paid',
+      paymentIntentId: session.payment_intent
+    });
+
+    await order.save();
+
+    // Create payment record
+    const payment = new Payment({
+      orderId: order._id,
+      userId: userId || order._id, // Use order ID if guest
+      stripeSessionId: session.id,
+      stripePaymentIntentId: session.payment_intent,
+      amount: session.amount_total / 100,
+      currency: session.currency,
+      status: 'succeeded',
+      customerEmail: session.customer_email,
+      billingDetails: {
+        name: session.customer_details?.name,
+        email: session.customer_email,
+        phone: session.customer_details?.phone,
+        address: session.customer_details?.address
+      },
+      processedAt: new Date()
+    });
+
+    await payment.save();
+
+    // Update product stock
+    for (const item of items) {
+      await Product.findByIdAndUpdate(
+        item.productId,
+        { $inc: { stock: -item.quantity } }
+      );
+    }
+
+    return { order, payment };
+  } catch (error) {
+    throw new Error('Error creating order from Stripe session: ' + error.message);
+  }
+};
+
+// Get order with payment details
+export const getOrderWithPayment = async (orderId) => {
+  try {
+    const order = await Order.findById(orderId)
+      .populate('userId', 'name email')
+      .populate('items.productId', 'name price images');
+    
+    if (!order) {
+      throw new Error('Order not found');
+    }
+
+    const payment = await Payment.findOne({ orderId });
+    
+    return { order, payment };
+  } catch (error) {
+    throw new Error('Error fetching order with payment: ' + error.message);
   }
 };
 

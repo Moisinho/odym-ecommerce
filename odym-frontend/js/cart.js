@@ -1,4 +1,4 @@
-// API base URL
+// API base URL - ajustado para el entorno actual
 const API_BASE_URL = 'http://localhost:3000/api';
 
 // Usuario quemado para testing (reemplazar con autenticación real)
@@ -406,14 +406,40 @@ document.addEventListener('DOMContentLoaded', function() {
     cleanCart();
     updateCartCount();
     
-    // Conectar botón de checkout
-    const checkoutBtn = document.getElementById('checkoutBtn');
-    if (checkoutBtn) {
-        checkoutBtn.addEventListener('click', proceedToCheckout);
-    }
+    // Conectar botón de checkout - con retry para asegurar que el botón existe
+    function connectCheckoutButton() {
+  const checkoutBtn = document.getElementById('checkoutBtn');
+  if (checkoutBtn) {
+    checkoutBtn.addEventListener('click', proceedToCheckout);
+    console.log('✅ Botón de checkout conectado correctamente desde cart');
+  } else {
+    console.log('⏳ Botón de checkout no encontrado, reintentando...');
+    setTimeout(connectCheckoutButton, 500);
+  }
+}
+
+    
+    // Esperar a que los modales se carguen
+    setTimeout(connectCheckoutButton, 100);
     
     console.log('Carrito inicializado con productos reales');
 });
+
+// También conectar cuando se abre el modal de carrito
+const originalToggleCart = toggleCart;
+window.toggleCart = async function() {
+    await originalToggleCart();
+    
+    // Asegurar que el botón esté conectado cuando se abre el modal
+    setTimeout(() => {
+        const checkoutBtn = document.getElementById('checkoutBtn');
+        if (checkoutBtn && !checkoutBtn.hasAttribute('data-connected')) {
+            checkoutBtn.addEventListener('click', proceedToCheckout);
+            checkoutBtn.setAttribute('data-connected', 'true');
+            console.log('✅ Botón de checkout reconectado al abrir modal');
+        }
+    }, 100);
+};
 
 // Funciones globales para debugging
 window.clearCart = function() {
@@ -492,6 +518,93 @@ async function proceedToCheckout() {
     } catch (error) {
         console.error('Error en checkout:', error);
         showNotification('Error al procesar el pago: ' + error.message, 'error');
+    }
+}
+
+// Función para compra directa (Buy Now) desde modal de producto
+async function buyNowFromModal(productId, quantity = 1) {
+    try {
+        console.log('=== BUY NOW FROM MODAL ===');
+        console.log('Product ID:', productId, 'Quantity:', quantity);
+        
+        // Obtener producto real desde la base de datos
+        const response = await fetch(`${API_BASE_URL}/products/${productId}`);
+        
+        if (!response.ok) {
+            throw new Error(`Producto ${productId} no encontrado`);
+        }
+        
+        const product = await response.json();
+        console.log('Producto obtenido:', product);
+        
+        // Verificar stock
+        if (product.stock && quantity > product.stock) {
+            showNotification(`No hay suficiente stock. Máximo: ${product.stock}`, 'error');
+            return false;
+        }
+        
+        // Preparar items para checkout directo
+        const items = [{
+            productId: productId,
+            quantity: quantity
+        }];
+
+        // Datos del cliente (por ahora quemados)
+        const customerData = {
+            email: 'temp@example.com',
+            firstName: 'Usuario',
+            lastName: 'Temporal'
+        };
+
+        showNotification('Procesando compra directa...', 'info');
+
+        // Crear sesión de checkout con Stripe
+        const checkoutResponse = await fetch(`${API_BASE_URL}/checkout/create-checkout-session`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                items: items,
+                customerEmail: customerData.email,
+                userId: HARDCODED_USER.id
+            })
+        });
+
+        if (!checkoutResponse.ok) {
+            throw new Error('Error al crear sesión de checkout');
+        }
+
+        const data = await checkoutResponse.json();
+        
+        if (data.success && data.url) {
+            // Guardar información de la sesión
+            localStorage.setItem('checkoutSession', JSON.stringify({
+                sessionId: data.sessionId,
+                orderId: data.orderId || null,
+                timestamp: Date.now(),
+                type: 'buy_now'
+            }));
+
+            // Cerrar modal de producto si está abierto
+            const productModal = document.getElementById('productModal');
+            if (productModal) {
+                productModal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+
+            // Redirigir a Stripe Checkout
+            window.location.href = data.url;
+        } else {
+            throw new Error(data.error || 'Error desconocido');
+        }
+
+        return true;
+        
+    } catch (error) {
+        console.error('Error en compra directa:', error);
+        showNotification('Error al procesar la compra: ' + error.message, 'error');
+        return false;
     }
 }
 

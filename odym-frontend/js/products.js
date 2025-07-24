@@ -131,16 +131,12 @@ async function viewProduct(productId) {
             };
         }
         
-        // Configurar botón de comprar ahora
+        // Configurar botón de comprar ahora - DIRECTO A STRIPE
         const buyNowBtn = document.getElementById('buyNowBtn');
         if (buyNowBtn) {
             buyNowBtn.onclick = () => {
                 const quantity = parseInt(document.getElementById('productQuantity')?.value || 1);
-                handleAddToCart(product._id, quantity);
-                closeProductModal();
-                if (typeof toggleCart === 'function') {
-                    setTimeout(() => toggleCart(), 500);
-                }
+                initiateStripeCheckout(product._id, quantity);
             };
         }
         
@@ -399,10 +395,96 @@ async function handleAddToCart(productId, quantity = 1) {
     }
 }
 
+// Stripe Checkout Integration
+async function initiateStripeCheckout(productId, quantity = 1) {
+    try {
+        // Show loading state
+        const buyNowBtn = document.getElementById('buyNowBtn');
+        if (buyNowBtn) {
+            buyNowBtn.disabled = true;
+            buyNowBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
+        }
+
+        // Get user email from authentication
+        let customerEmail = null;
+        let userId = 'guest';
+        
+        // Check AuthService first
+        if (window.AuthService && window.AuthService.isAuthenticated()) {
+            const user = window.AuthService.getUser();
+            customerEmail = user.email;
+            userId = user.id || user._id || 'guest';
+        } 
+        // Fallback to localStorage
+        else {
+            const userData = localStorage.getItem('user');
+            if (userData) {
+                const user = JSON.parse(userData);
+                customerEmail = user.email;
+                userId = user.id || user._id || 'guest';
+            }
+            // Check legacy storage
+            else if (localStorage.getItem('userEmail')) {
+                customerEmail = localStorage.getItem('userEmail');
+                userId = localStorage.getItem('userId') || 'guest';
+            }
+        }
+
+        // If no email found, prompt user to login
+        if (!customerEmail) {
+            alert('Por favor inicia sesión para continuar con el pago');
+            if (window.AuthService) {
+                window.location.href = '/odym-frontend/auth/login.html';
+            } else {
+                window.location.href = 'auth/login.html';
+            }
+            return;
+        }
+
+        // Create checkout session
+        const checkoutResponse = await fetch('http://localhost:3000/api/checkout/create-checkout-session', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                items: [{
+                    productId: productId,
+                    quantity: quantity
+                }],
+                customerEmail: customerEmail,
+                userId: userId
+            })
+        });
+
+        if (!checkoutResponse.ok) {
+            const error = await checkoutResponse.json();
+            throw new Error(error.message || 'Error al crear sesión de checkout');
+        }
+
+        const { url } = await checkoutResponse.json();
+
+        // Redirect to Stripe Checkout
+        window.location.href = url;
+
+    } catch (error) {
+        console.error('Checkout error:', error);
+        alert('Error: ' + error.message);
+        
+        // Reset button state
+        const buyNowBtn = document.getElementById('buyNowBtn');
+        if (buyNowBtn) {
+            buyNowBtn.disabled = false;
+            buyNowBtn.innerHTML = '<i class="fas fa-bolt mr-2"></i>Comprar ahora';
+        }
+    }
+}
+
 // Hacer funciones globales
 window.viewProduct = viewProduct;
 window.closeProductModal = closeProductModal;
 window.handleAddToCart = handleAddToCart;
+window.initiateStripeCheckout = initiateStripeCheckout;
 window.incrementQuantity = function() {
     const input = document.getElementById('productQuantity');
     if (input) {

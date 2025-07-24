@@ -99,8 +99,13 @@
     <!-- Modales -->
     <div id="modals"></div>
 
+    <script src="js/cart.js"></script>
+    <script src="js/products.js"></script>
+    <script src="js/index-products.js"></script>
+    <script src="js/products-api.js"></script>
+    <script src="js/main.js"></script>
     <script>
-        // Cargar todos los partials y luego inicializar AuthService
+        // Cargar todos los partials y luego inicializar
         Promise.all([
           fetch('partials/header.html').then(r => r.text()),
           fetch('partials/footer.html').then(r => r.text()),
@@ -110,16 +115,17 @@
           document.getElementById('footer').innerHTML = footer;
           document.getElementById('modals').innerHTML = modals;
       
-          AuthService.init();
+          // Inicializar después de cargar los modales
+          if (typeof Auth !== 'undefined') {
+            Auth.init();
+          }
+          if (typeof updateCartCount === 'function') {
+            updateCartCount();
+          }
+        }).catch(error => {
+          console.error('Error loading partials:', error);
         });
       </script>
-    <script src="/auth/auth.js"></script>
-    <script src="js/cart.js"></script>
-    <script src="js/products.js"></script>
-    <script src="js/index-products.js"></script>
-    <script src="js/products-api.js"></script>
-    <script src="js/main.js"></script>
-    <script src="assets/js/auth-service.js"></script>
     
 </body>
 </html>
