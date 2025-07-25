@@ -395,7 +395,7 @@ async function handleAddToCart(productId, quantity = 1) {
     }
 }
 
-// Stripe Checkout Integration
+// Stripe Checkout Integration - Unified with cart.js
 async function initiateStripeCheckout(productId, quantity = 1) {
     try {
         // Show loading state
@@ -403,6 +403,19 @@ async function initiateStripeCheckout(productId, quantity = 1) {
         if (buyNowBtn) {
             buyNowBtn.disabled = true;
             buyNowBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
+        }
+
+        // Get product details
+        const productResponse = await fetch(`${API_BASE_URL}/products/${productId}`);
+        if (!productResponse.ok) {
+            throw new Error('Producto no encontrado');
+        }
+        const product = await productResponse.json();
+
+        // Verify stock
+        if (product.stock && quantity > product.stock) {
+            showNotification(`No hay suficiente stock. Máximo: ${product.stock}`, 'error');
+            return;
         }
 
         // Get user email from authentication
@@ -441,17 +454,22 @@ async function initiateStripeCheckout(productId, quantity = 1) {
             return;
         }
 
-        // Create checkout session
-        const checkoutResponse = await fetch('http://localhost:3000/api/checkout/create-checkout-session', {
+        // Create single-item cart for Buy Now
+        const items = [{
+            productId: productId,
+            quantity: quantity
+        }];
+
+        showNotification('Redirigiendo a la pasarela de pago...', 'info');
+
+        // Create checkout session - using same endpoint as cart.js
+        const checkoutResponse = await fetch(`${API_BASE_URL}/checkout/create-checkout-session`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                items: [{
-                    productId: productId,
-                    quantity: quantity
-                }],
+                items: items,
                 customerEmail: customerEmail,
                 userId: userId
             })
@@ -462,14 +480,33 @@ async function initiateStripeCheckout(productId, quantity = 1) {
             throw new Error(error.message || 'Error al crear sesión de checkout');
         }
 
-        const { url } = await checkoutResponse.json();
+        const data = await checkoutResponse.json();
+        
+        if (data.success && data.url) {
+            // Guardar información de la sesión
+            localStorage.setItem('checkoutSession', JSON.stringify({
+                sessionId: data.sessionId,
+                orderId: data.orderId || null,
+                timestamp: Date.now(),
+                type: 'buy_now'
+            }));
 
-        // Redirect to Stripe Checkout
-        window.location.href = url;
+            // Cerrar modal de producto si está abierto
+            const productModal = document.getElementById('productModal');
+            if (productModal) {
+                productModal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+
+            // Redirigir a Stripe Checkout
+            window.location.href = data.url;
+        } else {
+            throw new Error(data.error || 'Error desconocido');
+        }
 
     } catch (error) {
         console.error('Checkout error:', error);
-        alert('Error: ' + error.message);
+        showNotification('Error al procesar la compra: ' + error.message, 'error');
         
         // Reset button state
         const buyNowBtn = document.getElementById('buyNowBtn');

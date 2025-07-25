@@ -401,44 +401,99 @@ function showNotification(message, type = 'success') {
     }, 3000);
 }
 
-// Inicializar al cargar la página
+// INICIALIZACIÓN CON DEPURACIÓN EXTREMA
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Cart.js cargado completamente');
     cleanCart();
     updateCartCount();
     
-    // Conectar botón de checkout - con retry para asegurar que el botón existe
+    // Función de depuración mejorada
     function connectCheckoutButton() {
-  const checkoutBtn = document.getElementById('checkoutBtn');
-  if (checkoutBtn) {
-    checkoutBtn.addEventListener('click', proceedToCheckout);
-    console.log('✅ Botón de checkout conectado correctamente desde cart');
-  } else {
-    console.log('⏳ Botón de checkout no encontrado, reintentando...');
-    setTimeout(connectCheckoutButton, 500);
-  }
-}
+        console.log('🔍 Buscando botón checkoutBtn...');
+        const checkoutBtn = document.getElementById('checkoutBtn');
+        
+        if (checkoutBtn) {
+            console.log('✅ Botón encontrado:', checkoutBtn);
+            console.log('✅ ID:', checkoutBtn.id);
+            console.log('✅ Texto:', checkoutBtn.textContent);
+            console.log('✅ Clases:', checkoutBtn.className);
+            console.log('✅ Padre:', checkoutBtn.parentElement);
+            
+            // Limpiar listeners anteriores
+            const newBtn = checkoutBtn.cloneNode(true);
+            checkoutBtn.parentNode.replaceChild(newBtn, checkoutBtn);
+            
+            // Agregar listener con depuración
+            newBtn.addEventListener('click', function(e) {
+                console.log('🎯 CLICK DETECTADO en botón de checkout');
+                console.log('🎯 Evento:', e);
+                console.log('🎯 Target:', e.target);
+                console.log('🎯 CurrentTarget:', e.currentTarget);
+                e.preventDefault();
+                e.stopPropagation();
+                proceedToCheckout();
+            });
+            
+            console.log('✅ Listener agregado exitosamente');
+        } else {
+            console.error('❌ Botón checkoutBtn NO ENCONTRADO');
+            console.log('❌ Todos los botones:', document.querySelectorAll('button'));
+            console.log('❌ Buscando por texto:', document.querySelectorAll('button'));
+            console.log('❌ Buscando por clase:', document.querySelectorAll('[class*="checkout"]'));
+            console.log('❌ Buscando por ID:', document.querySelectorAll('[id*="checkout"]'));
+            
+            // Intentar encontrar cualquier botón de checkout
+            const possibleButtons = document.querySelectorAll('button');
+            possibleButtons.forEach((btn, index) => {
+                console.log(`Botón ${index}:`, btn.textContent, btn.id, btn.className);
+            });
+            
+            setTimeout(connectCheckoutButton, 1000);
+        }
+    }
 
-    
-    // Esperar a que los modales se carguen
+    // Intentar conectar inmediatamente y con retry
     setTimeout(connectCheckoutButton, 100);
+    setTimeout(connectCheckoutButton, 500);
+    setTimeout(connectCheckoutButton, 1000);
     
-    console.log('Carrito inicializado con productos reales');
+    console.log('Carrito inicializado con depuración');
 });
 
-// También conectar cuando se abre el modal de carrito
+// Función de depuración para el modal
 const originalToggleCart = toggleCart;
 window.toggleCart = async function() {
+    console.log('🔄 Abriendo modal de carrito...');
     await originalToggleCart();
     
-    // Asegurar que el botón esté conectado cuando se abre el modal
     setTimeout(() => {
+        console.log('🔍 Verificando botón después de abrir modal...');
         const checkoutBtn = document.getElementById('checkoutBtn');
-        if (checkoutBtn && !checkoutBtn.hasAttribute('data-connected')) {
-            checkoutBtn.addEventListener('click', proceedToCheckout);
-            checkoutBtn.setAttribute('data-connected', 'true');
-            console.log('✅ Botón de checkout reconectado al abrir modal');
+        if (checkoutBtn) {
+            console.log('✅ Botón encontrado en modal:', checkoutBtn);
+            
+            // Limpiar y re-agregar listener
+            const newBtn = checkoutBtn.cloneNode(true);
+            checkoutBtn.parentNode.replaceChild(newBtn, checkoutBtn);
+            
+            newBtn.addEventListener('click', function(e) {
+                console.log('🎯 CLICK EN MODAL DETECTADO');
+                e.preventDefault();
+                e.stopPropagation();
+                proceedToCheckout();
+            });
+        } else {
+            console.error('❌ Botón no encontrado en modal');
         }
-    }, 100);
+    }, 500);
+};
+
+// Función auxiliar para testing manual
+window.testCheckout = function() {
+    console.log('🧪 Test manual de checkout iniciado');
+    console.log('localStorage:', localStorage);
+    console.log('Cart:', JSON.parse(localStorage.getItem('cart') || '[]'));
+    proceedToCheckout();
 };
 
 // Funciones globales para debugging
@@ -456,68 +511,148 @@ window.debugCart = function() {
     console.log('current cart variable:', cart);
 };
 
-// Función de checkout
+// FUNCIÓN CON DEPURACIÓN COMPLETA
 async function proceedToCheckout() {
+    console.log('=== INICIANDO DEBUG DE CHECKOUT ===');
+    
     try {
-        // Obtener carrito actual
-        const cart = JSON.parse(localStorage.getItem('cart')) || [];
+        // 1. VERIFICAR QUE EL BOTÓN EXISTE
+        const checkoutBtn = document.getElementById('checkoutBtn');
+        console.log('1. Botón encontrado:', checkoutBtn);
+        console.log('1.1 ID del botón:', checkoutBtn?.id);
+        console.log('1.2 Texto del botón:', checkoutBtn?.textContent);
+        console.log('1.3 Clases del botón:', checkoutBtn?.className);
         
-        if (cart.length === 0) {
-            showNotification('El carrito está vacío', 'error');
+        if (checkoutBtn) {
+            checkoutBtn.disabled = true;
+            checkoutBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
+        } else {
+            console.error('❌ ERROR: Botón checkoutBtn no encontrado');
+            console.log('Elementos disponibles:', document.querySelectorAll('button'));
             return;
         }
 
-        // Preparar items para el checkout
+        // 2. VERIFICAR CARRITO
+        console.log('2. Verificando carrito...');
+        const cartRaw = localStorage.getItem('cart');
+        console.log('2.1 Raw cart:', cartRaw);
+        
+        const cart = JSON.parse(cartRaw || '[]');
+        console.log('2.2 Parsed cart:', cart);
+        console.log('2.3 Cart length:', cart.length);
+        
+        if (cart.length === 0) {
+            console.log('2.4 Carrito vacío detectado');
+            showNotification('El carrito está vacío', 'error');
+            checkoutBtn.disabled = false;
+            checkoutBtn.innerHTML = 'Proceder con el pago';
+            return;
+        }
+
+        // 3. PREPARAR ITEMS
+        console.log('3. Preparando items...');
         const items = cart.map(item => ({
             productId: item.productId,
             quantity: item.quantity
         }));
+        console.log('3.1 Items preparados:', items);
 
-        // Datos del cliente (por ahora quemados, más tarde con formulario)
-        const customerData = {
-            email: 'temp@example.com',
-            firstName: 'Usuario',
-            lastName: 'Temporal'
+        // 4. VERIFICAR USUARIO
+        console.log('4. Verificando usuario...');
+        let customerEmail = null;
+        let userId = null;
+        
+        console.log('4.1 localStorage keys:', Object.keys(localStorage));
+        console.log('4.2 user en localStorage:', localStorage.getItem('user'));
+        console.log('4.3 userEmail en localStorage:', localStorage.getItem('userEmail'));
+        
+        if (localStorage.getItem('user')) {
+            const user = JSON.parse(localStorage.getItem('user'));
+            customerEmail = user.email;
+            userId = user.id || user._id;
+            console.log('4.4 Usuario de localStorage:', customerEmail);
+        } else if (localStorage.getItem('userEmail')) {
+            customerEmail = localStorage.getItem('userEmail');
+            userId = localStorage.getItem('userId') || 'guest';
+            console.log('4.5 Usuario de fallback:', customerEmail);
+        } else {
+            console.log('4.6 Usuario no encontrado');
+            alert('Por favor inicia sesión para continuar con el pago');
+            window.location.href = '/odym-frontend/auth/login.html';
+            return;
+        }
+
+        // 5. VERIFICAR CONEXIÓN AL BACKEND
+        console.log('5. Verificando conexión al backend...');
+        console.log('5.1 API_BASE_URL:', API_BASE_URL);
+        console.log('5.2 Endpoint:', `${API_BASE_URL}/checkout/create-checkout-session`);
+        
+        const payload = {
+            items: items,
+            customerEmail: customerEmail,
+            userId: userId
         };
+        console.log('5.3 Payload:', payload);
 
         showNotification('Redirigiendo a la pasarela de pago...', 'info');
 
-        // Crear sesión de checkout con Stripe
+        // 6. HACER LLAMADA AL BACKEND
+        console.log('6. Haciendo llamada al backend...');
         const response = await fetch(`${API_BASE_URL}/checkout/create-checkout-session`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                items: items,
-                customerEmail: customerData.email,
-                userId: HARDCODED_USER.id
-            })
+            body: JSON.stringify(payload)
         });
 
+        console.log('6.1 Response status:', response.status);
+        console.log('6.2 Response ok:', response.ok);
+
         if (!response.ok) {
-            throw new Error('Error al crear sesión de checkout');
+            const errorText = await response.text();
+            console.error('6.3 Error response:', errorText);
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
 
         const data = await response.json();
+        console.log('6.4 Data recibida:', data);
         
         if (data.success && data.url) {
-            // Guardar información de la sesión
+            console.log('6.5 URL de redirección:', data.url);
+            
+            // Guardar información
             localStorage.setItem('checkoutSession', JSON.stringify({
                 sessionId: data.sessionId,
                 orderId: data.orderId || null,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                type: 'cart_checkout'
             }));
 
-            // Redirigir a Stripe Checkout
+            // Cerrar modal
+            const cartModal = document.getElementById('cartModal');
+            if (cartModal) {
+                cartModal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+
+            console.log('7. REDIRIGIENDO A:', data.url);
             window.location.href = data.url;
         } else {
-            throw new Error(data.error || 'Error desconocido');
+            console.error('6.6 Error en data:', data);
+            throw new Error(data.error || 'Respuesta inválida del servidor');
         }
 
     } catch (error) {
-        console.error('Error en checkout:', error);
+        console.error('❌ ERROR COMPLETO:', error);
+        console.error('Stack trace:', error.stack);
         showNotification('Error al procesar el pago: ' + error.message, 'error');
+        
+        const checkoutBtn = document.getElementById('checkoutBtn');
+        if (checkoutBtn) {
+            checkoutBtn.disabled = false;
+            checkoutBtn.innerHTML = 'Proceder con el pago';
+        }
     }
 }
 
