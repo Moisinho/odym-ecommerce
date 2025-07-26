@@ -104,6 +104,7 @@
     <script src="js/index-products.js"></script>
     <script src="js/products-api.js"></script>
     <script src="js/main.js"></script>
+    <script src="assets/js/auth-service.js"></script>
     <script>
         // Cargar todos los partials y luego inicializar
         Promise.all([
@@ -116,12 +117,14 @@
           document.getElementById('modals').innerHTML = modals;
       
           // Inicializar después de cargar los modales
-          if (typeof Auth !== 'undefined') {
-            Auth.init();
-          }
-          if (typeof updateCartCount === 'function') {
-            updateCartCount();
-          }
+          setTimeout(() => {
+            if (typeof AuthService !== 'undefined') {
+              AuthService.init();
+            }
+            if (typeof updateCartCount === 'function') {
+              updateCartCount();
+            }
+          }, 100);
         }).catch(error => {
           console.error('Error loading partials:', error);
         });

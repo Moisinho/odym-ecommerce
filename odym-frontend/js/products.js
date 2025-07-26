@@ -8,24 +8,24 @@ let products = [];
 function loadProducts() {
     const productsList = document.getElementById('productsList');
     if (!productsList) return;
-    
+
     productsList.innerHTML = '';
-    
+
     let filteredProducts = products;
-    
+
     if (currentCategory) {
         filteredProducts = products.filter(product => {
             return product.category?.name?.toLowerCase() === currentCategory.toLowerCase();
         });
     }
-    
+
     // Aplicar filtro de precio
     const priceRange = document.getElementById('priceRange');
     if (priceRange) {
         const maxPrice = parseInt(priceRange.value);
         filteredProducts = filteredProducts.filter(product => product.price <= maxPrice);
     }
-    
+
     // Aplicar ordenamiento
     const sortBy = document.getElementById('sortBy');
     if (sortBy) {
@@ -40,12 +40,12 @@ function loadProducts() {
             }
         });
     }
-    
+
     // Actualizar contador
     if (document.getElementById('productCount')) {
         document.getElementById('productCount').textContent = `${filteredProducts.length} productos`;
     }
-    
+
     // Mostrar productos
     filteredProducts.forEach(product => {
         const productCard = document.createElement('div');
@@ -63,7 +63,7 @@ function loadProducts() {
                 <h3 class="font-semibold text-lg mb-2">${product.name}</h3>
                 <p class="text-gray-600 text-sm mb-2">${product.description?.substring(0, 100) || ''}...</p>
                 <p class="text-orange-600 font-bold text-xl mb-4">$${product.price?.toFixed(2) || '0.00'}</p>
-                
+
                 <div class="flex space-x-2">
                     <button class="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded transition duration-300" 
                             onclick="handleAddToCart('${product._id}', 1)">
@@ -81,24 +81,25 @@ function loadProducts() {
 }
 
 // Función para ver producto individual
+// ... (existing code) ...
+
+// Función para ver producto individual
 async function viewProduct(productId) {
-    console.log('Viendo producto:', productId);
-    
+    console.log('VIEW PRODUCT: Iniciando para productId:', productId);
+
     try {
-        // Obtener producto específico
         const response = await fetch(`${API_BASE_URL}/products/${productId}`);
-        console.log('Respuesta del servidor:', response.status, response.statusText);
-        
+        console.log('VIEW PRODUCT: Respuesta del servidor para producto:', response.status, response.statusText);
+
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
         }
-        
+
         const product = await response.json();
-        console.log('Producto obtenido:', product);
-        currentProduct = product;
-        
-        // Verificar que los elementos del modal existan
+        console.log('VIEW PRODUCT: Producto obtenido y establecido como currentProduct:', product);
+        currentProduct = product; // This is crucial for initiateStripeCheckout
+
         const modalTitle = document.getElementById('modalProductTitle');
         const modalTitle2 = document.getElementById('modalProductTitle2');
         const modalImage = document.getElementById('modalProductImage');
@@ -106,53 +107,170 @@ async function viewProduct(productId) {
         const modalPrice = document.getElementById('modalProductPrice');
         const modalDescription = document.getElementById('modalProductDescription');
         const stockElement = document.getElementById('stock');
-        
-        if (!modalTitle || !modalImage) {
-            throw new Error('Elementos del modal no encontrados');
+        const productQuantityInput = document.getElementById('productQuantity'); // Get the quantity input
+
+        if (!modalTitle || !modalImage || !productQuantityInput) { // Added productQuantityInput check
+            throw new Error('Elementos del modal de producto no encontrados (modalTitle, modalImage, productQuantityInput)');
         }
-        
-        // Actualizar modal con datos del producto específico
+
         modalTitle.textContent = product.name;
         if (modalTitle2) modalTitle2.textContent = product.name;
         modalImage.src = product.images?.[0] || 'https://via.placeholder.com/400x300?text=Sin+Imagen';
         modalImage.alt = product.name;
-        
+
         if (modalCategory) modalCategory.textContent = product.category?.name || 'Sin categoría';
         if (modalPrice) modalPrice.textContent = product.price?.toFixed(2) || '0.00';
         if (modalDescription) modalDescription.textContent = product.description || 'Sin descripción disponible';
         if (stockElement) stockElement.textContent = product.stock || 0;
-        
+
+        // Ensure the quantity input is reset/set correctly
+        if (productQuantityInput) productQuantityInput.value = 1; // Start with 1 when modal opens
+
         // Configurar botón de agregar al carrito con el producto correcto
         const addToCartBtn = document.getElementById('addToCartBtn');
         if (addToCartBtn) {
             addToCartBtn.onclick = () => {
                 const quantity = parseInt(document.getElementById('productQuantity')?.value || 1);
+                console.log('ADD TO CART BUTTON CLICK: Llamando handleAddToCart con product._id:', product._id, 'quantity:', quantity);
                 handleAddToCart(product._id, quantity);
             };
         }
-        
+
         // Configurar botón de comprar ahora - DIRECTO A STRIPE
         const buyNowBtn = document.getElementById('buyNowBtn');
         if (buyNowBtn) {
             buyNowBtn.onclick = () => {
                 const quantity = parseInt(document.getElementById('productQuantity')?.value || 1);
-                initiateStripeCheckout(product._id, quantity);
+                console.log('BUY NOW BUTTON CLICK: Iniciando chequeo de autenticación para productId:', product._id, 'quantity:', quantity);
+                
+                // Verificar autenticación usando AuthService - consistente con cart.js
+                if (window.AuthService && window.AuthService.isAuthenticated()) {
+                    const user = window.AuthService.getUser();
+                    if (user && user.email) {
+                        console.log('BUY NOW BUTTON CLICK: Usuario autenticado. Llamando initiateStripeCheckout.');
+                        initiateStripeCheckout(product._id, quantity);
+                        return;
+                    }
+                }
+                console.log('BUY NOW BUTTON CLICK: Usuario NO autenticado. Redirigiendo a login.');
+                alert('Por favor inicia sesión para continuar con la compra');
+                window.location.href = '/odym-frontend/auth/login.html';
             };
         }
-        
-        // Mostrar modal
+
         const productModal = document.getElementById('productModal');
         if (productModal) {
             productModal.classList.add('active');
             document.body.style.overflow = 'hidden';
-            console.log('Modal mostrado correctamente');
+            console.log('VIEW PRODUCT: Modal de producto mostrado correctamente.');
         } else {
-            throw new Error('Modal de producto no encontrado');
+            throw new Error('Modal de producto no encontrado.');
         }
-        
+
     } catch (error) {
-        console.error('Error al cargar producto:', error);
+        console.error('VIEW PRODUCT ERROR: Error al cargar producto:', error);
         showNotification(`Error al cargar producto: ${error.message}`, 'error');
+    }
+}
+
+// Stripe Checkout Integration - Unified with cart.js
+async function initiateStripeCheckout(productId, quantity = 1) {
+    console.log('INITIATE STRIPE CHECKOUT: Iniciando para productId:', productId, 'quantity:', quantity);
+    try {
+        const buyNowBtn = document.getElementById('buyNowBtn');
+        if (buyNowBtn) {
+            buyNowBtn.disabled = true;
+            buyNowBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
+            console.log('INITIATE STRIPE CHECKOUT: Botón "Comprar ahora" deshabilitado y texto cambiado.');
+        }
+
+        const productResponse = await fetch(`${API_BASE_URL}/products/${productId}`);
+        if (!productResponse.ok) {
+            throw new Error('INITIATE STRIPE CHECKOUT: Producto no encontrado en la API');
+        }
+        const product = await productResponse.json();
+        console.log('INITIATE STRIPE CHECKOUT: Detalles del producto obtenidos:', product);
+
+        if (product.stock && quantity > product.stock) {
+            showNotification(`No hay suficiente stock. Máximo: ${product.stock}`, 'error');
+            console.warn('INITIATE STRIPE CHECKOUT: Stock insuficiente.');
+            return;
+        }
+
+        let customerEmail = null;
+        let userId = 'guest';
+
+        // Usar AuthService para obtener datos del usuario - consistente con cart.js
+        if (window.AuthService && window.AuthService.isAuthenticated()) {
+            const user = window.AuthService.getUser();
+            customerEmail = user.email;
+            userId = user.id || user._id || 'guest';
+            console.log('INITIATE STRIPE CHECKOUT: Usuario obtenido de AuthService:', customerEmail, userId);
+        } else {
+            console.error('INITIATE STRIPE CHECKOUT: Usuario no autenticado. Redirigiendo a login.');
+            alert('Por favor inicia sesión para continuar con el pago');
+            window.location.href = '/odym-frontend/auth/login.html';
+            return;
+        }
+
+        const items = [{
+            productId: productId,
+            quantity: quantity
+        }];
+        console.log('INITIATE STRIPE CHECKOUT: Items para checkout:', items);
+
+        showNotification('Redirigiendo a la pasarela de pago...', 'info');
+
+        const checkoutResponse = await fetch(`${API_BASE_URL}/checkout/create-checkout-session`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                items: items,
+                customerEmail: customerEmail,
+                userId: userId
+            })
+        });
+
+        console.log('INITIATE STRIPE CHECKOUT: Respuesta de la API de checkout:', checkoutResponse.status, checkoutResponse.statusText);
+
+        if (!checkoutResponse.ok) {
+            const error = await checkoutResponse.json();
+            throw new Error(error.message || 'Error al crear sesión de checkout');
+        }
+
+        const data = await checkoutResponse.json();
+        console.log('INITIATE STRIPE CHECKOUT: Datos de sesión de checkout recibidos:', data);
+
+        if (data.success && data.url) {
+            localStorage.setItem('checkoutSession', JSON.stringify({
+                sessionId: data.sessionId,
+                orderId: data.orderId || null,
+                timestamp: Date.now(),
+                type: 'buy_now'
+            }));
+
+            const productModal = document.getElementById('productModal');
+            if (productModal) {
+                productModal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+            console.log('INITIATE STRIPE CHECKOUT: Redirigiendo a Stripe:', data.url);
+            window.location.href = data.url;
+        } else {
+            throw new Error(data.error || 'Error desconocido al obtener URL de Stripe.');
+        }
+
+    } catch (error) {
+        console.error('INITIATE STRIPE CHECKOUT ERROR:', error);
+        showNotification('Error al procesar la compra: ' + error.message, 'error');
+
+        const buyNowBtn = document.getElementById('buyNowBtn');
+        if (buyNowBtn) {
+            buyNowBtn.disabled = false;
+            buyNowBtn.innerHTML = '<i class="fas fa-bolt mr-2"></i>Comprar ahora';
+        }
     }
 }
 
@@ -212,56 +330,6 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             console.error('Error cargando productos:', error);
             console.log('Usando productos de ejemplo...');
-            
-            // Productos de ejemplo para testing
-            products = [
-                {
-                    _id: '507f1f77bcf86cd799439011',
-                    name: 'Pesa Olímpica 20kg',
-                    price: 89.99,
-                    images: ['https://via.placeholder.com/300x200?text=Pesa+20kg'],
-                    category: { name: 'Pesas' },
-                    description: 'Pesa olímpica profesional de 20kg con acabado cromado',
-                    stock: 15
-                },
-                {
-                    _id: '507f1f77bcf86cd799439012',
-                    name: 'Mancuerna Ajustable 10kg',
-                    price: 45.99,
-                    images: ['https://via.placeholder.com/300x200?text=Mancuerna+10kg'],
-                    category: { name: 'Pesas' },
-                    description: 'Mancuerna ajustable de 10kg con sistema de bloqueo rápido',
-                    stock: 25
-                },
-                {
-                    _id: '507f1f77bcf86cd799439013',
-                    name: 'Barra Olímpica 2.2m',
-                    price: 120.00,
-                    images: ['https://via.placeholder.com/300x200?text=Barra+2.2m'],
-                    category: { name: 'Pesas' },
-                    description: 'Barra olímpica profesional de 2.2m con agarre antideslizante',
-                    stock: 10
-                },
-                {
-                    _id: '507f1f77bcf86cd799439014',
-                    name: 'Banco Ajustable',
-                    price: 199.99,
-                    images: ['https://via.placeholder.com/300x200?text=Banco+Ajustable'],
-                    category: { name: 'Máquinas' },
-                    description: 'Banco ajustable para entrenamiento de fuerza',
-                    stock: 8
-                },
-                {
-                    _id: '507f1f77bcf86cd799439015',
-                    name: 'Cuerda de Saltar',
-                    price: 15.99,
-                    images: ['https://via.placeholder.com/300x200?text=Cuerda+Saltar'],
-                    category: { name: 'Accesorios' },
-                    description: 'Cuerda de saltar ajustable con contador digital',
-                    stock: 50
-                }
-            ];
-            loadProducts();
         });
 
     // Configurar filtros
@@ -395,74 +463,68 @@ async function handleAddToCart(productId, quantity = 1) {
     }
 }
 
-// Stripe Checkout Integration - Unified with cart.js
 async function initiateStripeCheckout(productId, quantity = 1) {
+    console.log('INITIATE STRIPE CHECKOUT: Iniciando para productId:', productId, 'quantity:', quantity);
     try {
-        // Show loading state
         const buyNowBtn = document.getElementById('buyNowBtn');
         if (buyNowBtn) {
             buyNowBtn.disabled = true;
             buyNowBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
+            console.log('INITIATE STRIPE CHECKOUT: Botón "Comprar ahora" deshabilitado y texto cambiado.');
         }
 
-        // Get product details
         const productResponse = await fetch(`${API_BASE_URL}/products/${productId}`);
         if (!productResponse.ok) {
-            throw new Error('Producto no encontrado');
+            throw new Error('INITIATE STRIPE CHECKOUT: Producto no encontrado en la API');
         }
         const product = await productResponse.json();
+        console.log('INITIATE STRIPE CHECKOUT: Detalles del producto obtenidos:', product);
 
-        // Verify stock
         if (product.stock && quantity > product.stock) {
             showNotification(`No hay suficiente stock. Máximo: ${product.stock}`, 'error');
+            console.warn('INITIATE STRIPE CHECKOUT: Stock insuficiente.');
             return;
         }
 
-        // Get user email from authentication
         let customerEmail = null;
         let userId = 'guest';
-        
-        // Check AuthService first
+
+        // Prefer AuthService for user details
         if (window.AuthService && window.AuthService.isAuthenticated()) {
             const user = window.AuthService.getUser();
             customerEmail = user.email;
             userId = user.id || user._id || 'guest';
-        } 
-        // Fallback to localStorage
-        else {
+            console.log('INITIATE STRIPE CHECKOUT: Usuario obtenido de AuthService:', customerEmail, userId);
+        } else {
+            // Fallback for debugging, but should ideally rely on AuthService
             const userData = localStorage.getItem('user');
             if (userData) {
                 const user = JSON.parse(userData);
                 customerEmail = user.email;
                 userId = user.id || user._id || 'guest';
-            }
-            // Check legacy storage
-            else if (localStorage.getItem('userEmail')) {
+                console.log('INITIATE STRIPE CHECKOUT: Usuario obtenido de localStorage (fallback):', customerEmail, userId);
+            } else if (localStorage.getItem('userEmail')) {
                 customerEmail = localStorage.getItem('userEmail');
                 userId = localStorage.getItem('userId') || 'guest';
+                console.log('INITIATE STRIPE CHECKOUT: Usuario obtenido de legacy localStorage (fallback):', customerEmail, userId);
             }
         }
 
-        // If no email found, prompt user to login
         if (!customerEmail) {
+            console.error('INITIATE STRIPE CHECKOUT: Correo electrónico del cliente no encontrado. Redirigiendo a login.');
             alert('Por favor inicia sesión para continuar con el pago');
-            if (window.AuthService) {
-                window.location.href = '/odym-frontend/auth/login.html';
-            } else {
-                window.location.href = 'auth/login.html';
-            }
+            window.location.href = '/odym-frontend/auth/login.html'; // Ensure this path is correct relative to your root
             return;
         }
 
-        // Create single-item cart for Buy Now
         const items = [{
             productId: productId,
             quantity: quantity
         }];
+        console.log('INITIATE STRIPE CHECKOUT: Items para checkout:', items);
 
         showNotification('Redirigiendo a la pasarela de pago...', 'info');
 
-        // Create checkout session - using same endpoint as cart.js
         const checkoutResponse = await fetch(`${API_BASE_URL}/checkout/create-checkout-session`, {
             method: 'POST',
             headers: {
@@ -475,15 +537,17 @@ async function initiateStripeCheckout(productId, quantity = 1) {
             })
         });
 
+        console.log('INITIATE STRIPE CHECKOUT: Respuesta de la API de checkout:', checkoutResponse.status, checkoutResponse.statusText);
+
         if (!checkoutResponse.ok) {
             const error = await checkoutResponse.json();
             throw new Error(error.message || 'Error al crear sesión de checkout');
         }
 
         const data = await checkoutResponse.json();
-        
+        console.log('INITIATE STRIPE CHECKOUT: Datos de sesión de checkout recibidos:', data);
+
         if (data.success && data.url) {
-            // Guardar información de la sesión
             localStorage.setItem('checkoutSession', JSON.stringify({
                 sessionId: data.sessionId,
                 orderId: data.orderId || null,
@@ -491,24 +555,21 @@ async function initiateStripeCheckout(productId, quantity = 1) {
                 type: 'buy_now'
             }));
 
-            // Cerrar modal de producto si está abierto
             const productModal = document.getElementById('productModal');
             if (productModal) {
                 productModal.classList.remove('active');
                 document.body.style.overflow = '';
             }
-
-            // Redirigir a Stripe Checkout
+            console.log('INITIATE STRIPE CHECKOUT: Redirigiendo a Stripe:', data.url);
             window.location.href = data.url;
         } else {
-            throw new Error(data.error || 'Error desconocido');
+            throw new Error(data.error || 'Error desconocido al obtener URL de Stripe.');
         }
 
     } catch (error) {
-        console.error('Checkout error:', error);
+        console.error('INITIATE STRIPE CHECKOUT ERROR:', error);
         showNotification('Error al procesar la compra: ' + error.message, 'error');
-        
-        // Reset button state
+
         const buyNowBtn = document.getElementById('buyNowBtn');
         if (buyNowBtn) {
             buyNowBtn.disabled = false;

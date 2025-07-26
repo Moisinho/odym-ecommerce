@@ -27,14 +27,31 @@
       },
 
       checkAuth: () => {
-        const publicPages = ['/auth/login.html', '/auth/register.html'];
+        const publicPages = ['/auth/login.html', '/auth/register.html', '/logout.html'];
         const currentPath = window.location.pathname;
         
+        // Permitir navegación libre para páginas públicas
+        const alwaysPublicPages = ['/', '/index.html', '/products.html', '/success.html', '/cancel.html'];
+        const isAlwaysPublic = alwaysPublicPages.some(page => 
+          currentPath.includes(page) || 
+          currentPath.endsWith(page)
+        );
+        
+        // Solo redirigir si está en páginas protegidas sin autenticación
         if (!methods.isAuthenticated() && !publicPages.some(page => currentPath.includes(page))) {
-          window.location.href = `${BASE_URL}/auth/login.html`;
-          return false;
+          // No redirigir de páginas públicas
+          if (isAlwaysPublic) {
+            return true;
+          }
+          
+          // Redirigir solo de páginas protegidas
+          if (currentPath.includes('/account/') || currentPath.includes('/admin/')) {
+            window.location.href = `${BASE_URL}/auth/login.html`;
+            return false;
+          }
         }
         
+        // Redirigir usuarios autenticados de páginas de login/registro
         if (methods.isAuthenticated() && publicPages.some(page => currentPath.includes(page))) {
           window.location.href = BASE_URL;
           return false;
@@ -51,9 +68,12 @@
 
         function renderUserMenu() {
           const user = methods.getUser();
+          
           if (user) {
-            // Mostrar carrito
+            // Mostrar carrito y botón de usuario
             if (cartBtn) cartBtn.style.display = '';
+            if (userBtn) userBtn.style.display = '';
+            
             // Mostrar menú de usuario
             if (userMenu) {
               userMenu.innerHTML = `
@@ -64,14 +84,37 @@
                 <button id="logoutBtn" class="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100">Cerrar sesión</button>
               `;
             }
+            
+            // Remover botón de login si existe
+            const loginBtn = document.querySelector('.login-button');
+            if (loginBtn) loginBtn.remove();
+            
           } else {
-            // Ocultar carrito
-            if (cartBtn) cartBtn.style.display = 'none';
-            // Menú solo con login
+            // Para usuarios no autenticados
+            if (cartBtn) cartBtn.style.display = ''; // Mostrar carrito para todos
+            
+            // Reemplazar botón de usuario con botón de login
+            if (userBtn) {
+              userBtn.style.display = 'none'; // Ocultar botón de usuario
+              
+              // Crear botón de login si no existe
+              let loginBtn = document.querySelector('.login-button');
+              if (!loginBtn) {
+                const userContainer = userBtn.parentElement;
+                loginBtn = document.createElement('button');
+                loginBtn.className = 'login-button bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded transition duration-300';
+                loginBtn.textContent = 'Iniciar Sesión';
+                loginBtn.onclick = () => window.location.href = '/odym-frontend/auth/login.html';
+                
+                if (userContainer) {
+                  userContainer.appendChild(loginBtn);
+                }
+              }
+            }
+            
+            // Limpiar menú
             if (userMenu) {
-              userMenu.innerHTML = `
-                <button id="loginBtn" class="w-full text-left px-4 py-2 text-orange-600 hover:bg-gray-100">Iniciar sesión</button>
-              `;
+              userMenu.innerHTML = '';
             }
           }
         }
@@ -79,6 +122,7 @@
         if (userBtn && userMenu) {
           // Mostrar/ocultar menú al hacer click en el icono de usuario
           userBtn.addEventListener('click', (e) => {
+            console.log('User auth button clicked'); // Added console log for debugging
             e.stopPropagation();
             userMenu.classList.toggle('hidden');
             renderUserMenu();
@@ -96,15 +140,15 @@
             if (e.target.id === 'logoutBtn') {
               methods.logout();
             }
-            if (e.target.id === 'loginBtn') {
-              window.location.href = '/odym-frontend/auth/login.html';
-            }
           });
         }
 
         // Render inicial y en cambios de auth
         renderUserMenu();
         window.addEventListener('auth-change', renderUserMenu);
+        
+        // Render inmediatamente al cargar
+        setTimeout(renderUserMenu, 100);
       }
     };
 
@@ -131,4 +175,4 @@
   document.addEventListener('DOMContentLoaded', () => {
     AuthService.init();
   });
-})(); 
+})();

@@ -511,7 +511,6 @@ window.debugCart = function() {
     console.log('current cart variable:', cart);
 };
 
-// FUNCIÓN CON DEPURACIÓN COMPLETA
 async function proceedToCheckout() {
     console.log('=== INICIANDO DEBUG DE CHECKOUT ===');
     
@@ -566,17 +565,14 @@ async function proceedToCheckout() {
         console.log('4.2 user en localStorage:', localStorage.getItem('user'));
         console.log('4.3 userEmail en localStorage:', localStorage.getItem('userEmail'));
         
-        if (localStorage.getItem('user')) {
-            const user = JSON.parse(localStorage.getItem('user'));
+        // Usar window.AuthService para verificar autenticación
+        if (window.AuthService && window.AuthService.isAuthenticated()) {
+            const user = window.AuthService.getUser();
             customerEmail = user.email;
             userId = user.id || user._id;
-            console.log('4.4 Usuario de localStorage:', customerEmail);
-        } else if (localStorage.getItem('userEmail')) {
-            customerEmail = localStorage.getItem('userEmail');
-            userId = localStorage.getItem('userId') || 'guest';
-            console.log('4.5 Usuario de fallback:', customerEmail);
+            console.log('4.4 Usuario autenticado:', customerEmail);
         } else {
-            console.log('4.6 Usuario no encontrado');
+            console.log('4.6 Usuario no autenticado - redirigiendo a login');
             alert('Por favor inicia sesión para continuar con el pago');
             window.location.href = '/odym-frontend/auth/login.html';
             return;

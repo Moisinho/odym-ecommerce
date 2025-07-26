@@ -90,10 +90,23 @@ function viewProduct(productId) {
       closeProductModal();
     };
     
-    // Listener del botón "Comprar ahora" - DIRECTO A STRIPE
+    // Listener del botón "Comprar ahora" - Verificar autenticación primero
     document.getElementById('buyNowBtn').onclick = () => {
       const quantity = parseInt(document.getElementById('productQuantity').value);
-      initiateStripeCheckout(product._id, quantity);
+      
+      // Verificar si el usuario está autenticado usando el AuthService global
+      if (window.AuthService && window.AuthService.isAuthenticated()) {
+        const user = window.AuthService.getUser();
+        if (user && user.email) {
+          initiateStripeCheckout(product._id, quantity);
+        } else {
+          alert('Por favor inicia sesión para continuar con la compra');
+          window.location.href = '/odym-frontend/auth/login.html';
+        }
+      } else {
+        alert('Por favor inicia sesión para continuar con la compra');
+        window.location.href = '/odym-frontend/auth/login.html';
+      }
     };
 
     
