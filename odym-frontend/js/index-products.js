@@ -13,7 +13,7 @@ async function fetchAndRenderFeaturedProducts() {
     container.innerHTML = products.map(product => `
       <div class="product-card bg-white rounded-lg shadow-md overflow-hidden transition-transform hover:-translate-y-1 cursor-pointer" onclick="viewProduct('${product._id}')">
         <div class="relative">
-          <img src="${product.images[0] || '/assets/img/placeholder-product.png'}" alt="${product.name}" class="w-full h-48 object-contain bg-gray-100" />
+          <img src="${product.images[0]}" alt="${product.name}" class="w-full h-48 object-contain bg-gray-100" />
           <span class="absolute top-2 right-2 bg-gray-800 text-white text-xs px-2 py-1 rounded-full">${product.category?.name || 'General'}</span>
         </div>
         <div class="p-4">

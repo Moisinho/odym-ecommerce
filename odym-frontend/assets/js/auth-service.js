@@ -32,8 +32,8 @@
         
         // Permitir navegación libre para páginas públicas
         const alwaysPublicPages = ['/', '/index.html', '/products.html', '/success.html', '/cancel.html'];
-        const isAlwaysPublic = alwaysPublicPages.some(page => 
-          currentPath.includes(page) || 
+        const isAlwaysPublic = alwaysPublicPages.some(page =>
+          currentPath.includes(page) ||
           currentPath.endsWith(page)
         );
         
@@ -53,21 +53,85 @@
         
         // Redirigir usuarios autenticados de páginas de login/registro
         if (methods.isAuthenticated() && publicPages.some(page => currentPath.includes(page))) {
-          window.location.href = BASE_URL;
+          const user = methods.getUser();
+          const isAdmin = methods.isAdminUser(user);
+          
+          if (isAdmin) {
+            window.location.href = `${BASE_URL}/admin/`;
+          } else {
+            window.location.href = BASE_URL;
+          }
           return false;
+        }
+        
+        // Verificar si un usuario normal está intentando acceder al panel de admin
+        if (methods.isAuthenticated() && currentPath.includes('/admin/')) {
+          const user = methods.getUser();
+          const isAdmin = methods.isAdminUser(user);
+          
+          if (!isAdmin) {
+            // Usuario normal intentando acceder al admin, redirigir a inicio
+            window.location.href = BASE_URL;
+            return false;
+          }
         }
         
         return true;
       },
 
+      // Nueva función para detectar si un usuario es admin
+      isAdminUser: (user) => {
+        if (!user) return false;
+        
+        // Verificar diferentes formas de identificar un admin
+        const adminIdentifiers = [
+          // Por email
+          user.email === 'admin@odym.com',
+          user.email === 'admin@admin.com',
+          user.email === 'administrador@odym.com',
+          // Por username
+          user.username === 'admin',
+          user.username === 'administrator',
+          user.username === 'administrador',
+          // Por rol si existe
+          user.role === 'admin',
+          user.role === 'administrator',
+          // Por tipo de usuario
+          user.userType === 'admin',
+          user.type === 'admin',
+          // Por propiedad isAdmin
+          user.isAdmin === true,
+          // Por subscription/plan
+          user.subscription === 'admin',
+          user.subscription === 'ADMIN',
+          user.plan === 'admin'
+        ];
+        
+        return adminIdentifiers.some(condition => condition === true);
+      },
+
       // --- Lógica para el menú de usuario en el header ---
       initUserMenu: () => {
-        const userBtn = document.querySelector('.user-auth-button');
+        // Buscar el botón de usuario con múltiples selectores
+        const userBtn = document.querySelector('.user-auth-button') ||
+                       document.getElementById('userAuthButton') ||
+                       document.querySelector('#userAuthButton');
         const userMenu = document.getElementById('userMenu');
         const cartBtn = document.querySelector('.fa-shopping-cart')?.parentElement;
+        
+        console.log('🔍 Inicializando menú de usuario...');
+        console.log('👤 Botón de usuario encontrado:', !!userBtn);
+        console.log('📋 Menú de usuario encontrado:', !!userMenu);
+        console.log('🛒 Botón de carrito encontrado:', !!cartBtn);
 
         function renderUserMenu() {
           const user = methods.getUser();
+          console.log('🔄 Renderizando menú de usuario...');
+          console.log('👤 Usuario autenticado:', !!user);
+          if (user) {
+            console.log('📧 Email del usuario:', user.email);
+            console.log('👤 Nombre del usuario:', user.fullName || user.username);
+          }
           
           if (user) {
             // Mostrar carrito y botón de usuario
@@ -76,13 +140,17 @@
             
             // Mostrar menú de usuario
             if (userMenu) {
+              console.log('📋 Actualizando contenido del menú...');
               userMenu.innerHTML = `
                 <div class="px-4 py-2 border-b">
-                  <div class="font-bold text-gray-800">${user.fullName || user.username}</div>
-                  <div class="text-xs text-gray-500">${user.email || ''}</div>
+                  <div class="font-bold text-gray-800">${user.fullName || user.username || 'Usuario'}</div>
+                  <div class="text-xs text-gray-500">${user.email || 'Sin email'}</div>
                 </div>
                 <button id="logoutBtn" class="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100">Cerrar sesión</button>
               `;
+              console.log('✅ Menú actualizado correctamente');
+            } else {
+              console.error('❌ No se encontró el elemento userMenu');
             }
             
             // Remover botón de login si existe
@@ -90,6 +158,7 @@
             if (loginBtn) loginBtn.remove();
             
           } else {
+            console.log('🚫 Usuario no autenticado, mostrando botón de login');
             // Para usuarios no autenticados
             if (cartBtn) cartBtn.style.display = ''; // Mostrar carrito para todos
             
@@ -120,9 +189,12 @@
         }
 
         if (userBtn && userMenu) {
+          console.log('✅ Configurando event listeners del menú...');
+          
           // Mostrar/ocultar menú al hacer click en el icono de usuario
           userBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            console.log('🖱️ Click en botón de usuario');
             userMenu.classList.toggle('hidden');
             renderUserMenu();
           });
@@ -137,17 +209,27 @@
           // Delegar clicks en el menú
           userMenu.addEventListener('click', (e) => {
             if (e.target.id === 'logoutBtn') {
+              console.log('🚪 Cerrando sesión...');
               methods.logout();
             }
           });
+          
+          // Render inicial y en cambios de auth
+          renderUserMenu();
+          window.addEventListener('auth-change', renderUserMenu);
+          
+          // Render inmediatamente al cargar
+          setTimeout(renderUserMenu, 100);
+          
+        } else {
+          console.warn('⚠️ No se pudieron encontrar los elementos del menú de usuario');
+          console.log('🔍 Reintentando en 500ms...');
+          
+          // Reintentar después de un delay
+          setTimeout(() => {
+            methods.initUserMenu();
+          }, 500);
         }
-
-        // Render inicial y en cambios de auth
-        renderUserMenu();
-        window.addEventListener('auth-change', renderUserMenu);
-        
-        // Render inmediatamente al cargar
-        setTimeout(renderUserMenu, 100);
       }
     };
 
@@ -163,7 +245,9 @@
       getUser: methods.getUser,
       setUser: methods.setUser,
       logout: methods.logout,
-      checkAuth: methods.checkAuth
+      checkAuth: methods.checkAuth,
+      isAdminUser: methods.isAdminUser,
+      initUserMenu: methods.initUserMenu
     };
   })();
 

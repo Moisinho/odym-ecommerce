@@ -1,14 +1,87 @@
 // Variables globales
 let sidebarOpen = true;
+const API_BASE_URL = 'http://localhost:3000/api';
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', function() {
+    // Verificar autenticación de admin
+    checkAdminAuth();
+    
     // Configurar eventos
     setupEvents();
     
     // Cargar modales
     loadModals();
 });
+
+// Verificar autenticación de administrador
+function checkAdminAuth() {
+    // Usar AuthService para obtener datos del usuario
+    if (!window.AuthService || !window.AuthService.isAuthenticated()) {
+        redirectToLogin();
+        return;
+    }
+    
+    const user = window.AuthService.getUser();
+    
+    if (!user || !user._id) {
+        redirectToLogin();
+        return;
+    }
+    
+    // Verificar si el usuario tiene rol de admin
+    if (user.role === 'admin') {
+        // Usuario autenticado como admin
+        updateAdminInfo(user);
+    } else {
+        // Verificar en el servidor como respaldo
+        fetch(`${API_BASE_URL}/customers/is-admin/${user._id}`)
+            .then(response => response.json())
+            .then(data => {
+                if (!data.isAdmin) {
+                    alert('Acceso denegado. Se requieren permisos de administrador.');
+                    redirectToLogin();
+                } else {
+                    // Usuario autenticado como admin
+                    updateAdminInfo(user);
+                }
+            })
+            .catch(error => {
+                console.error('Error verificando permisos de admin:', error);
+                redirectToLogin();
+            });
+    }
+}
+
+// Redirigir al login de administradores
+function redirectToLogin() {
+    window.location.href = './login.html';
+}
+
+// Actualizar información del admin en la interfaz
+function updateAdminInfo(user) {
+    // Actualizar nombre del admin en el header
+    const adminNameElement = document.querySelector('header .font-medium');
+    if (adminNameElement) {
+        adminNameElement.textContent = user.fullName || user.username || 'Admin User';
+    }
+    
+    // Actualizar inicial del avatar
+    const avatarElement = document.querySelector('header .bg-orange-600');
+    if (avatarElement && user.fullName) {
+        avatarElement.textContent = user.fullName.charAt(0).toUpperCase();
+    }
+}
+
+// Cerrar sesión
+function logout() {
+    if (window.AuthService) {
+        window.AuthService.logout();
+    } else {
+        localStorage.removeItem('user');
+        redirectToLogin();
+    }
+}
 
 // Cargar modales desde archivo externo
 function loadModals() {

@@ -1,107 +1,151 @@
-
-let currentCategory = null;
+let currentCategories = [];
 let products = [];
+let categories = [];
+const API_BASE_URL = 'http://localhost:3000/api';
+
+// Función para cargar categorías dinámicamente desde backend
+async function loadCategories() {
+  try {
+    console.log('Cargando categorías...');
+    const response = await fetch(API_BASE_URL + '/categories');
+    if (!response.ok) throw new Error('Error al cargar categorías');
+    categories = await response.json();
+    console.log('Categorías recibidas:', categories);
+
+    const container = document.getElementById('categoriesContainer');
+    if (!container) {
+      console.error('No se encontró el contenedor de categorías');
+      return;
+    }
+
+    // Limpiar contenido previo
+    container.innerHTML = '';
+
+    // Agregar checkbox "Todos"
+    const allDiv = document.createElement('div');
+    allDiv.className = 'flex items-center';
+    allDiv.innerHTML = '<input type="checkbox" id="category-all" class="category-filter mr-2" value="all" checked><label for="category-all">Todos</label>';
+    container.appendChild(allDiv);
+
+    // Agregar categorías dinámicas
+    categories.forEach(function(cat) {
+      const catDiv = document.createElement('div');
+      catDiv.className = 'flex items-center';
+      catDiv.innerHTML = '<input type="checkbox" id="category-' + cat.name.toLowerCase() + '" class="category-filter mr-2" value="' + cat.name.toLowerCase() + '"><label for="category-' + cat.name.toLowerCase() + '">' + cat.name + '</label>';
+      container.appendChild(catDiv);
+    });
+
+    // Configurar eventos para los checkboxes
+    document.querySelectorAll('.category-filter').forEach(function(checkbox) {
+      checkbox.addEventListener('change', function () {
+        if (this.value === 'all' && this.checked) {
+          document.querySelectorAll('.category-filter').forEach(function(cb) {
+            if (cb.value !== 'all') cb.checked = false;
+          });
+          currentCategories = [];
+        } else {
+          const index = currentCategories.indexOf(this.value);
+          if (this.checked && index === -1) {
+            currentCategories.push(this.value);
+          } else if (!this.checked && index > -1) {
+            currentCategories.splice(index, 1);
+          }
+          document.getElementById('category-all').checked = currentCategories.length === 0;
+        }
+        loadProducts();
+      });
+    });
+
+  } catch (error) {
+    console.error('Error cargando categorías:', error);
+  }
+}
 
 // Cargar productos
 function loadProducts() {
-  const productsList = document.getElementById("productsList");
+  const productsList = document.getElementById('productsList');
   if (!productsList) return;
 
-  productsList.innerHTML = "";
+  productsList.innerHTML = '';
 
   let filteredProducts = products;
 
-  if (currentCategory) {
-    filteredProducts = products.filter((product) => {
-      return (
-        product.category?.name?.toLowerCase() === currentCategory.toLowerCase()
-      );
+  if (currentCategories.length > 0) {
+    filteredProducts = products.filter(function(product) {
+      return product.category && product.category.name && currentCategories.includes(product.category.name.toLowerCase());
     });
   }
 
   // Aplicar filtro de precio
-  const priceRange = document.getElementById("priceRange");
+  const priceRange = document.getElementById('priceRange');
   if (priceRange) {
     const maxPrice = parseInt(priceRange.value);
-    filteredProducts = filteredProducts.filter(
-      (product) => product.price <= maxPrice
-    );
+    filteredProducts = filteredProducts.filter(function(product) {
+      return product.price <= maxPrice;
+    });
   }
 
   // Aplicar ordenamiento
-  const sortBy = document.getElementById("sortBy");
+  const sortBy = document.getElementById('sortBy');
   if (sortBy) {
     const sortValue = sortBy.value;
-    filteredProducts.sort((a, b) => {
+    filteredProducts.sort(function(a, b) {
       switch (sortValue) {
-        case "price-asc":
-          return a.price - b.price;
-        case "price-desc":
-          return b.price - a.price;
-        case "name-asc":
-          return a.name.localeCompare(b.name);
-        case "name-desc":
-          return b.name.localeCompare(a.name);
-        default:
-          return 0;
+        case 'price-asc': return a.price - b.price;
+        case 'price-desc': return b.price - a.price;
+        case 'name-asc': return a.name.localeCompare(b.name);
+        case 'name-desc': return b.name.localeCompare(a.name);
+        default: return 0;
       }
     });
   }
 
   // Actualizar contador
-  if (document.getElementById("productCount")) {
-    document.getElementById(
-      "productCount"
-    ).textContent = `${filteredProducts.length} productos`;
+  if (document.getElementById('productCount')) {
+    document.getElementById('productCount').textContent = filteredProducts.length + ' productos';
   }
 
   // Mostrar productos
-  filteredProducts.forEach((product) => {
-    const productCard = document.createElement("div");
-    productCard.className =
-      "product-card bg-white rounded-lg shadow-md overflow-hidden";
-    productCard.innerHTML = `
-            <div class="relative">
-                <img src="${
-                  product.images?.[0] || "/assets/img/placeholder-product.png"
-                }" 
-                     alt="${product.name}" 
-                     class="w-full h-48 object-cover">
-                <span class="absolute top-2 right-2 bg-gray-800 text-white text-xs px-2 py-1 rounded-full">
-                    ${product.category?.name || "Sin categoría"}
-                </span>
-            </div>
-            <div class="p-4">
-                <h3 class="font-semibold text-lg mb-2">${product.name}</h3>
-                <p class="text-gray-600 text-sm mb-2">${
-                  product.description?.substring(0, 100) || ""
-                }...</p>
-                <p class="text-orange-600 font-bold text-xl mb-4">$${
-                  product.price?.toFixed(2) || "0.00"
-                }</p>
-
-                <div class="flex space-x-2">
-                    <button class="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded transition duration-300" 
-                            onclick="handleAddToCart('${product._id}', 1)">
-                        Añadir
-                    </button>
-                    <button class="flex-1 bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded transition duration-300" 
-                            onclick="viewProduct('${product._id}')">
-                        Ver
-                    </button>
-                </div>
-            </div>
-        `;
+  filteredProducts.forEach(function(product) {
+    const productCard = document.createElement('div');
+    productCard.className = 'product-card bg-white rounded-lg shadow-md overflow-hidden';
+    productCard.innerHTML = '<div class="relative">' +
+      '<img src="' + (product.images && product.images[0] ? product.images[0] : '/assets/img/placeholder-product.png') + '" alt="' + product.name + '" class="w-full h-48 object-cover">' +
+      '<span class="absolute top-2 right-2 bg-gray-800 text-white text-xs px-2 py-1 rounded-full">' + (product.category ? product.category.name : 'Sin categoría') + '</span>' +
+      '</div>' +
+      '<div class="p-4">' +
+      '<h3 class="font-semibold text-lg mb-2">' + product.name + '</h3>' +
+      '<p class="text-gray-600 text-sm mb-2">' + (product.description ? product.description.substring(0, 100) : '') + '...</p>' +
+      '<p class="text-orange-600 font-bold text-xl mb-4">$' + (product.price ? product.price.toFixed(2) : '0.00') + '</p>' +
+      '<div class="flex space-x-2">' +
+      '<button class="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded transition duration-300" onclick="handleAddToCart(\'' + product._id + '\', 1)">Añadir</button>' +
+      '<button class="flex-1 bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded transition duration-300" onclick="viewProduct(\'' + product._id + '\')">Ver</button>' +
+      '</div>' +
+      '</div>';
     productsList.appendChild(productCard);
   });
 }
 
-// Función para ver producto individual
-// ... (existing code) ...
+// Inicializar categorías y productos al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+  loadCategories();
 
-// Función para ver producto individual
+  fetch(API_BASE_URL + '/products')
+    .then(function(response) {
+      if (!response.ok) throw new Error('Error al cargar productos');
+      return response.json();
+    })
+    .then(function(data) {
+      products = Array.isArray(data) ? data : [];
+      loadProducts();
+    })
+    .catch(function(error) {
+      console.error('Error cargando productos:', error);
+    });
+});
+
+
 async function viewProduct(productId) {
-
   try {
     const response = await fetch(`${API_BASE_URL}/products/${productId}`);
     if (!response.ok) {
@@ -163,21 +207,33 @@ async function viewProduct(productId) {
     // Configurar botón de comprar ahora - DIRECTO A STRIPE
     const buyNowBtn = document.getElementById("buyNowBtn");
     if (buyNowBtn) {
+      // Asegurar que el botón esté habilitado y tenga el texto correcto
+      buyNowBtn.disabled = false;
+      buyNowBtn.innerHTML = '<i class="fas fa-bolt mr-2"></i>Comprar ahora';
+      
+      // Asignar event listener con verificación de autenticación mejorada
       buyNowBtn.onclick = () => {
         const quantity = parseInt(
           document.getElementById("productQuantity")?.value || 1
         );
 
-        // Verificar autenticación usando AuthService - consistente con cart.js
-        if (window.AuthService && window.AuthService.isAuthenticated()) {
-          const user = window.AuthService.getUser();
-          if (user && user.email) {
-            initiateStripeCheckout(product._id, quantity);
-            return;
+        // Verificar autenticación usando AuthService con manejo de errores
+        try {
+          if (window.AuthService && window.AuthService.isAuthenticated()) {
+            const user = window.AuthService.getUser();
+            if (user && user.email) {
+              initiateStripeCheckout(product._id, quantity);
+              return;
+            }
           }
+          
+          // Si no está autenticado, redirigir al login
+          alert("Por favor inicia sesión para continuar con la compra");
+          window.location.href = "/odym-frontend/auth/login.html";
+        } catch (error) {
+          console.error("Error en verificación de autenticación:", error);
+          alert("Error al verificar autenticación. Por favor intenta de nuevo.");
         }
-        alert("Por favor inicia sesión para continuar con la compra");
-        window.location.href = "/odym-frontend/auth/login.html";
       };
     }
 
@@ -307,9 +363,33 @@ async function initiateStripeCheckout(productId, quantity = 1) {
 
 // Función para cerrar modal de producto
 function closeProductModal() {
-  document.getElementById("productModal").classList.remove("active");
-  document.body.style.overflow = "";
-  currentProduct = null;
+  const productModal = document.getElementById("productModal");
+  if (productModal) {
+    productModal.classList.remove("active");
+    document.body.style.overflow = "";
+    
+    // Limpiar event listeners y resetear estado
+    const buyNowBtn = document.getElementById("buyNowBtn");
+    const addToCartBtn = document.getElementById("addToCartBtn");
+    
+    if (buyNowBtn) {
+      buyNowBtn.onclick = null;
+      buyNowBtn.disabled = false;
+      buyNowBtn.innerHTML = '<i class="fas fa-bolt mr-2"></i>Comprar ahora';
+    }
+    
+    if (addToCartBtn) {
+      addToCartBtn.onclick = null;
+    }
+    
+    // Resetear valores del formulario
+    const productQuantityInput = document.getElementById("productQuantity");
+    if (productQuantityInput) {
+      productQuantityInput.value = 1;
+    }
+    
+    currentProduct = null;
+  }
 }
 
 // Configurar filtros
@@ -438,7 +518,6 @@ function showNotification(message, type = "success") {
 
 // Función para manejar agregar al carrito desde cualquier lugar
 async function handleAddToCart(productId, quantity = 1) {
-
   try {
     // Verificar si la función addToCart está disponible
     if (typeof addToCart === "function") {
@@ -577,7 +656,7 @@ async function initiateStripeCheckout(productId, quantity = 1) {
       throw new Error(error.message || "Error al crear sesión de checkout");
     }
 
-    const data = await checkoutResponse.json()
+    const data = await checkoutResponse.json();
 
     if (data.success && data.url) {
       localStorage.setItem(

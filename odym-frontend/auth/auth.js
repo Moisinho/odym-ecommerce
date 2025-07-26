@@ -298,12 +298,54 @@
 
           // Guardar datos del usuario
           AuthService.setUser(data.customer);
-          // Redirigir a la página principal
-          window.location.href = 'http://localhost:5500/odym-frontend/';
+          
+          // Verificar si el usuario es admin y redirigir apropiadamente
+          const user = data.customer;
+          const isAdmin = methods.isAdminUser(user);
+          
+          if (isAdmin) {
+            // Redirigir al panel de administración
+            console.log('Usuario admin detectado, redirigiendo al panel de administración...');
+            window.location.href = 'http://localhost:5500/odym-frontend/admin/';
+          } else {
+            // Redirigir a la página principal para usuarios normales
+            window.location.href = 'http://localhost:5500/odym-frontend/';
+          }
         } catch (error) {
           console.error('Error al iniciar sesión:', error);
           alert(error.message || 'Hubo un error al iniciar sesión. Por favor, intente nuevamente.');
         }
+      },
+
+      // Nueva función para detectar si un usuario es admin
+      isAdminUser: (user) => {
+        if (!user) return false;
+        
+        // Verificar diferentes formas de identificar un admin
+        const adminIdentifiers = [
+          // Por email
+          user.email === 'admin@odym.com',
+          user.email === 'admin@admin.com',
+          user.email === 'administrador@odym.com',
+          // Por username
+          user.username === 'admin',
+          user.username === 'administrator',
+          user.username === 'administrador',
+          // Por rol si existe
+          user.role === 'admin',
+          user.role === 'administrator',
+          // Por tipo de usuario
+          user.userType === 'admin',
+          user.type === 'admin',
+          // Por propiedad isAdmin
+          user.isAdmin === true,
+          // Por subscription/plan
+          user.subscription === 'admin',
+          user.subscription === 'ADMIN',
+          user.plan === 'admin'
+        ];
+        
+        return adminIdentifiers.some(condition => condition === true);
       }
     }
 

@@ -12,6 +12,23 @@
 <body>
     <!-- Header -->
     <div id="header"></div>
+    <script>
+        // Esperar a que el header se cargue y luego inicializar AuthService para el menú de usuario
+        document.addEventListener('DOMContentLoaded', () => {
+            const headerDiv = document.getElementById('header');
+            if (headerDiv) {
+                const observer = new MutationObserver((mutations, obs) => {
+                    if (headerDiv.innerHTML.trim().length > 0) {
+                        if (window.AuthService && typeof window.AuthService.initUserMenu === 'function') {
+                            window.AuthService.initUserMenu();
+                        }
+                        obs.disconnect();
+                    }
+                });
+                observer.observe(headerDiv, { childList: true });
+            }
+        });
+    </script>
 
     <!-- Contenido Principal -->
     <main>
