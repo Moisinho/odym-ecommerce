@@ -357,14 +357,12 @@ class ProductsManager {
     this.showModal();
   } catch (error) {
     showNotification(`Error al cargar producto: ${error.message}`, 'error');
-    console.error('Error en editProduct:', error);
   } finally {
     hideLoading();
   }
 }
 
   async deleteProduct(id) {
-    console.log('Attempting to delete product with ID:', id);
     const product = this.products.find(p => p._id === id);
     if (!product) {
       showNotification('Producto no encontrado', 'error');
@@ -373,7 +371,6 @@ class ProductsManager {
 
     // Validate ObjectId format
     if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
-      console.error('Invalid ObjectId format:', id);
       showNotification('ID de producto inválido: ' + id, 'error');
       return;
     }
@@ -383,12 +380,10 @@ class ProductsManager {
       async () => {
         try {
           showLoading();
-          console.log('Sending DELETE request for product ID:', id);
           await api.deleteProduct(id);
           showNotification('Producto eliminado exitosamente');
           await this.loadProducts();
         } catch (error) {
-          console.error('Error en deleteProduct:', error);
           showNotification('Error al eliminar: ' + error.message, 'error');
         } finally {
           hideLoading();

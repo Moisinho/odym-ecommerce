@@ -11,10 +11,7 @@ async function checkoutRoutes(fastify, options) {
   // Crear sesión de checkout con Stripe
   fastify.post('/create-checkout-session', async (request, reply) => {
     try {
-      console.log('=== INICIANDO CHECKOUT ===');
       const { items, customerEmail, userId } = request.body;
-
-      console.log('Request body:', { items, customerEmail, userId });
 
       if (!items || !Array.isArray(items) || items.length === 0) {
         return reply.status(400).send({ error: 'Items array is required' });
@@ -142,7 +139,6 @@ async function checkoutRoutes(fastify, options) {
         process.env.STRIPE_WEBHOOK_SECRET
       );
     } catch (err) {
-      console.log(`❌ Webhook signature verification failed.`, err.message);
       return reply.status(400).send(`Webhook Error: ${err.message}`);
     }
 
@@ -153,7 +149,6 @@ async function checkoutRoutes(fastify, options) {
         await handleCheckoutSessionCompleted(session, fastify);
         break;
       default:
-        console.log(`Unhandled event type ${event.type}`);
     }
 
     reply.send({ received: true });
@@ -203,8 +198,6 @@ async function checkoutRoutes(fastify, options) {
 // Función para manejar la creación de órdenes
 async function handleCheckoutSessionCompleted(session, fastify) {
   try {
-    console.log('🎯 Processing checkout session:', session.id);
-    
     const metadata = session.metadata;
     const items = JSON.parse(metadata.cart || '[]');
     const userId = metadata.userId || 'guest';
@@ -260,8 +253,6 @@ async function handleCheckoutSessionCompleted(session, fastify) {
         { $inc: { stock: -item.quantity } }
       );
     }
-
-    console.log('✅ Order created successfully:', order._id);
     return order;
 
   } catch (error) {

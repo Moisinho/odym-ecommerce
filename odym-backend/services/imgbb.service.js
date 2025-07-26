@@ -12,7 +12,6 @@ const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
 export async function uploadImage(base64Image) {
   try {
     if (!IMGBB_API_KEY) {
-      console.log(process.env);
       throw new Error('IMGBB_API_KEY is not configured');
     }
 
@@ -20,8 +19,6 @@ export async function uploadImage(base64Image) {
     const cleanBase64 = base64Image.includes('data:image') 
       ? base64Image.split(',')[1] 
       : base64Image;
-
-    console.log('Image upload attempt - Base64 length:', cleanBase64.length);
 
     const formData = new FormData();
     formData.append('key', IMGBB_API_KEY);
@@ -37,14 +34,11 @@ export async function uploadImage(base64Image) {
     });
 
     if (response.data && response.data.data && response.data.data.url) {
-      console.log('Image uploaded successfully:', response.data.data.url);
       return response.data.data.url;
     } else {
       throw new Error('Invalid response from imgBB');
     }
   } catch (error) {
-    console.error('ImgBB upload error:', error.message);
-    console.error('Error details:', error.response?.data || error);
     throw new Error(`imgBB upload failed: ${error.message}`);
   }
 }

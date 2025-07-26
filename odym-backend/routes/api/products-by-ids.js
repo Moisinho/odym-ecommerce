@@ -6,7 +6,6 @@ export default async (fastify) => {
     fastify.post('/by-ids', async (req, reply) => {
         try {
             const { ids } = req.body;
-            console.log('Recibidos IDs:', ids);
             
             if (!ids || !Array.isArray(ids) || ids.length === 0) {
                 return reply.status(400).send({
@@ -27,15 +26,10 @@ export default async (fastify) => {
                 });
             }
             
-            console.log('IDs válidos:', validIds);
-            
             // Buscar productos
             const products = await Product.find({
                 _id: { $in: validIds }
             }).populate('category', 'name');
-            
-            console.log('Productos encontrados:', products.length);
-            
             return reply.send({
                 success: true,
                 products: products.map(product => ({

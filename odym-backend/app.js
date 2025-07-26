@@ -107,7 +107,6 @@ app.register(import('@fastify/static'), {
 
 
 app.setNotFoundHandler((request, reply) => {
-    console.log(`NotFoundHandler called for ${request.method} ${request.url}`);
     reply.sendFile('index.html');
 });
 

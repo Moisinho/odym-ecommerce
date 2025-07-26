@@ -25,16 +25,13 @@ export const getProducts = async () => {
 // Obtener producto por ID
 export const getProductById = async (productId) => {
   try {
-    console.log('Buscando producto con ID:', productId);
     const product = await Product.findById(productId).populate('category');
-    console.log('Producto encontrado:', product ? product.name : 'null');
     
     if (!product) {
       throw new Error('Product not found');
     }
     return product;
   } catch (error) {
-    console.error('Error en getProductById:', error);
     if (error.name === 'CastError') {
       throw new Error('Invalid product ID format');
     }
@@ -92,7 +89,6 @@ export const deleteProduct = async (id) => {
     // First check if product exists
     const product = await Product.findById(id);
     if (!product) {
-      console.log('Product not found for deletion:', id);
       return null;
     }
     
@@ -100,10 +96,8 @@ export const deleteProduct = async (id) => {
     // For now, we'll allow deletion even if referenced
     
     const result = await Product.findByIdAndDelete(id);
-    console.log('Product deleted successfully:', id);
     return result;
   } catch (error) {
-    console.error('Error in deleteProduct service:', error);
     throw error;
   }
 };

@@ -122,7 +122,6 @@
         if (userBtn && userMenu) {
           // Mostrar/ocultar menú al hacer click en el icono de usuario
           userBtn.addEventListener('click', (e) => {
-            console.log('User auth button clicked'); // Added console log for debugging
             e.stopPropagation();
             userMenu.classList.toggle('hidden');
             renderUserMenu();

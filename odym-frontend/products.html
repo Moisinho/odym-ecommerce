@@ -110,38 +110,37 @@
     <!-- Modales -->
     <div id="modals"></div>
     
-    <script src="js/main.js"></script>
-    
-    <script src="js/products.js"></script>
-    <script src="js/cart.js"></script>
-    <script src="js/products.js"></script>
-    <script src="js/index-products.js"></script>
+    <!-- Scripts en orden correcto -->
+     <script src="js/products.js"></script>
+     <script src="js/cart-global.js"></script>
+     <script src="js/index-products.js"></script>
     <script src="js/products-api.js"></script>
     <script src="js/main.js"></script>
     <script src="assets/js/auth-service.js"></script>
+    
     <script>
-      // Cargar todos los partials y luego inicializar
-      Promise.all([
-        fetch('partials/header.html').then(r => r.text()),
-        fetch('partials/footer.html').then(r => r.text()),
-        fetch('partials/modals.html').then(r => r.text())
-      ]).then(([header, footer, modals]) => {
-        document.getElementById('header').innerHTML = header;
-        document.getElementById('footer').innerHTML = footer;
-        document.getElementById('modals').innerHTML = modals;
+        // Cargar todos los partials y luego inicializar
+        Promise.all([
+          fetch('partials/header.html').then(r => r.text()),
+          fetch('partials/footer.html').then(r => r.text()),
+          fetch('partials/modals.html').then(r => r.text())
+        ]).then(([header, footer, modals]) => {
+          document.getElementById('header').innerHTML = header;
+          document.getElementById('footer').innerHTML = footer;
+          document.getElementById('modals').innerHTML = modals;
 
-        // Inicializar después de cargar los modales
-        setTimeout(() => {
-          if (typeof AuthService !== 'undefined') {
-            AuthService.init();
-          }
-          if (typeof updateCartCount === 'function') {
-            updateCartCount();
-          }
-        }, 100);
-      }).catch(error => {
-        console.error('Error loading partials:', error);
-      });
+          // Inicializar después de cargar los modales
+          setTimeout(() => {
+            if (typeof AuthService !== 'undefined') {
+              AuthService.init();
+            }
+            if (typeof updateCartCount === 'function') {
+              updateCartCount();
+            }
+          }, 100);
+        }).catch(error => {
+          console.error('Error loading partials:', error);
+        });
     </script>
 
 </body>
