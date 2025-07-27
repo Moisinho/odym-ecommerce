@@ -26,7 +26,7 @@
                             <h2 class="text-lg font-semibold text-gray-800">Gestión de Administradores</h2>
                             <p class="text-sm text-gray-600">Administra los usuarios con rol de administrador</p>
                         </div>
-                        <button class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg flex items-center">
+                        <button id="newAdminBtn" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg flex items-center">
                             <i class="fas fa-plus mr-2"></i>
                             Nuevo Administrador
                         </button>
@@ -44,7 +44,7 @@
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
+                            <tbody id="adminsTableBody" class="bg-white divide-y divide-gray-200">
                                 <tr class="hover:bg-gray-50">
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="flex items-center">
@@ -75,16 +75,66 @@
             </main>
         </div>
     </div>
-    <script src="../js/main.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            loadPartial('header-container', './partials/header.html', () => {
-                document.getElementById('page-title').innerText = 'Administradores';
-            });
-            loadPartial('sidebar-container', './partials/aside.html', () => {
-                setActiveLink('admins.html');
-            });
-        });
-    </script>
+    <!-- Modal para Nuevo/Editar Administrador -->
+    <div id="adminModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="adminModalTitle" class="text-lg font-semibold">Nuevo Administrador</h3>
+                <button id="closeModalBtn" type="button" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="adminForm">
+                <input type="hidden" id="adminId">
+                <div class="mb-4">
+                    <label for="adminName" class="block text-sm font-medium text-gray-700">Nombre</label>
+                    <input type="text" id="adminName" name="name"
+                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
+                        required>
+                </div>
+                <div class="mb-4">
+                    <label for="adminEmail" class="block text-sm font-medium text-gray-700">Email</label>
+                    <input type="email" id="adminEmail" name="email"
+                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
+                        required>
+                </div>
+                <div class="mb-4">
+                    <label for="adminUsername" class="block text-sm font-medium text-gray-700">Nombre de usuario</label>
+                    <input type="text" id="adminUsername" name="username"
+                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
+                        required>
+                </div>
+                <div class="mb-4">
+                    <label for="adminPassword" class="block text-sm font-medium text-gray-700">Contraseña</label>
+                    <input type="password" id="adminPassword" name="password"
+                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-500 focus:border-orange-500">
+                    <p class="text-xs text-gray-500 mt-1">Dejar en blanco para mantener la contraseña actual (solo al editar)</p>
+                </div>
+                <div class="mb-4">
+                    <label for="adminRole" class="block text-sm font-medium text-gray-700">Rol</label>
+                    <select id="adminRole" name="role"
+                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
+                        required>
+                        <option value="Admin">Admin</option>
+                        <option value="Super Admin">Super Admin</option>
+                        <option value="Editor">Editor</option>
+                    </select>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" id="cancelAdminBtn" class="px-4 py-2 text-gray-600 hover:text-gray-800">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700">
+                        Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="./js/main.js"></script>
+    <script src="./js/api.js"></script>
+    <script src="./js/utils.js"></script>
+    <script src="./js/admins.js"></script>
 </body>
 </html>
