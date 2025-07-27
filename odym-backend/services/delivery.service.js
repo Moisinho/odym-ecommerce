@@ -148,7 +148,7 @@ export const assignOrderToDelivery = async (orderId, deliveryPersonId) => {
     // Verify delivery person exists and has correct role
     const deliveryPerson = await User.findById(deliveryPersonId);
     if (!deliveryPerson || deliveryPerson.role !== 'delivery') {
-      throw new Error('Invalid delivery person');
+      throw new Error('ID de repartidor invalido');
     }
     
     const order = await Order.findByIdAndUpdate(

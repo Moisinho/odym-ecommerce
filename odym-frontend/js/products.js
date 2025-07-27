@@ -15,7 +15,7 @@ async function loadCategories() {
     const container = document.getElementById('categoriesContainer');
     if (!container) {
       console.error('No se encontró el contenedor de categorías');
-      return;
+      return Promise.resolve();
     }
 
     // Limpiar contenido previo
@@ -56,8 +56,10 @@ async function loadCategories() {
       });
     });
 
+    return Promise.resolve();
   } catch (error) {
     console.error('Error cargando categorías:', error);
+    return Promise.reject(error);
   }
 }
 
@@ -125,25 +127,6 @@ function loadProducts() {
     productsList.appendChild(productCard);
   });
 }
-
-// Inicializar categorías y productos al cargar la página
-document.addEventListener('DOMContentLoaded', function() {
-  loadCategories();
-
-  fetch(API_BASE_URL + '/products')
-    .then(function(response) {
-      if (!response.ok) throw new Error('Error al cargar productos');
-      return response.json();
-    })
-    .then(function(data) {
-      products = Array.isArray(data) ? data : [];
-      loadProducts();
-    })
-    .catch(function(error) {
-      console.error('Error cargando productos:', error);
-    });
-});
-
 
 async function viewProduct(productId) {
   try {
@@ -392,28 +375,48 @@ function closeProductModal() {
   }
 }
 
+// Función para inicializar filtros desde URL
+function initializeFiltersFromURL() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const category = urlParams.get("category");
+
+  if (category) {
+    // Actualizar título
+    document.getElementById("productsTitle").textContent = getCategoryName(category);
+    
+    // Agregar categoría a la lista de filtros activos
+    currentCategories = [category];
+    
+    // Esperar a que las categorías se carguen y luego marcar el checkbox
+    setTimeout(() => {
+      const categoryCheckbox = document.getElementById(`category-${category}`);
+      const allCheckbox = document.getElementById("category-all");
+      
+      if (categoryCheckbox) {
+        categoryCheckbox.checked = true;
+      }
+      if (allCheckbox) {
+        allCheckbox.checked = false;
+      }
+      
+      // Recargar productos con el filtro aplicado
+      loadProducts();
+    }, 500);
+  }
+}
+
 // Configurar filtros
 document.addEventListener("DOMContentLoaded", function () {
   // Solo en la página de productos
   if (!document.getElementById("productsList")) return;
 
-  // Verificar parámetros de URL
-  const urlParams = new URLSearchParams(window.location.search);
-  const category = urlParams.get("category");
+  // Cargar categorías primero
+  loadCategories().then(() => {
+    // Inicializar filtros desde URL después de cargar categorías
+    initializeFiltersFromURL();
+  });
 
-  if (category) {
-    currentCategory = category;
-    document.getElementById("productsTitle").textContent =
-      getCategoryName(category);
-
-    // Marcar checkbox correspondiente
-    const categoryCheckbox = document.getElementById(`category-${category}`);
-    if (categoryCheckbox) {
-      categoryCheckbox.checked = true;
-      document.getElementById("category-all").checked = false;
-    }
-  }
-
+  // Cargar productos
   fetch(`${API_BASE_URL}/products`)
     .then((response) => {
       if (!response.ok) {
@@ -429,27 +432,14 @@ document.addEventListener("DOMContentLoaded", function () {
         products = [];
       }
 
-      loadProducts();
+      // Cargar productos después de un pequeño delay para asegurar que los filtros estén listos
+      setTimeout(() => {
+        loadProducts();
+      }, 600);
     })
     .catch((error) => {
       console.error("Error cargando productos:", error);
     });
-
-  // Configurar filtros
-  document.querySelectorAll(".category-filter").forEach((checkbox) => {
-    checkbox.addEventListener("change", function () {
-      if (this.value === "all" && this.checked) {
-        document.querySelectorAll(".category-filter").forEach((cb) => {
-          if (cb.value !== "all") cb.checked = false;
-        });
-        currentCategory = null;
-      } else if (this.checked) {
-        document.getElementById("category-all").checked = false;
-        currentCategory = this.value;
-      }
-      loadProducts();
-    });
-  });
 
   // Configurar rango de precio
   const priceRange = document.getElementById("priceRange");

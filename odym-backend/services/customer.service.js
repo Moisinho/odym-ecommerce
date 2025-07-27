@@ -22,13 +22,13 @@ export const loginCustomer = async (request, reply) => {
     });
     
     if (!customer) {
-      return reply.status(401).send({ error: 'Invalid credentials' });
+      return reply.status(401).send({ error: 'Credenciales inválidas' });
     }
     
     // Check password using the User model's comparePassword method
     const isPasswordValid = await customer.comparePassword(password);
     if (!isPasswordValid) {
-      return reply.status(401).send({ error: 'Invalid credentials' });
+      return reply.status(401).send({ error: "Credenciales inválidas" });
     }
     
     // Remove password from response and ensure phone/address fields exist
