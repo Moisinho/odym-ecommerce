@@ -12,6 +12,7 @@ import productRoutes from './routes/api/product.routes.js';
 import cartRoutes from './routes/api/cart.routes.js';
 import orderRoutes from './routes/api/order.routes.js';
 import productsByIdsRoutes from './routes/api/products-by-ids.js';
+import analyticsRoutes from './routes/api/analytics.routes.js';
 
 import cors from '@fastify/cors';
 
@@ -96,6 +97,7 @@ app.register(orderRoutes, { prefix: '/api/orders' });
 app.register(checkoutRoutes, { prefix: '/api/checkout' });
 app.register(paymentRoutes, { prefix: '/api/payment' });
 app.register(productsByIdsRoutes, { prefix: '/api/products-by-ids' });
+app.register(analyticsRoutes, { prefix: '/api/analytics' });
 
 // Serve static files (frontend assets)
 app.register(import('@fastify/static'), {

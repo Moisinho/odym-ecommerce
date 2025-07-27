@@ -376,14 +376,11 @@ async function toggleCart() {
     setTimeout(() => {
       const checkoutBtn = document.getElementById("checkoutBtn");
       if (checkoutBtn && !checkoutBtn.onclick) {
-        console.log('🔄 Reconectando botón "Proceder al pago"...');
         checkoutBtn.onclick = function (e) {
           e.preventDefault();
           e.stopPropagation();
-          console.log("🛒 Iniciando checkout desde carrito...");
           proceedToCheckout();
         };
-        console.log('✅ Botón "Proceder al pago" reconectado');
       }
     }, 100);
   } else {

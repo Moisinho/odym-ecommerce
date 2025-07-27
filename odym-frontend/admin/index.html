@@ -10,7 +10,15 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="flex h-screen bg-gray-100">
+    <!-- Loading state to prevent dual display during login transition -->
+    <div id="admin-loading" class="fixed inset-0 bg-gray-100 flex items-center justify-center z-50">
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
+            <p class="text-gray-600">Verificando autenticación...</p>
+        </div>
+    </div>
+
+    <div id="admin-dashboard" class="flex h-screen bg-gray-100" style="display: none;">
         <!-- Sidebar -->
         <aside id="sidebar" class="bg-white shadow-md w-64 fixed h-full z-30">
             <div class="p-6 border-b border-gray-200">
@@ -101,9 +109,9 @@
                             <div class="flex justify-between items-start">
                                 <div>
                                     <p class="text-gray-500 text-sm">Ventas totales</p>
-                                    <h3 class="text-2xl font-bold mt-1">$24,780.50</h3>
-                                    <p class="text-green-500 text-sm mt-2">
-                                        <i class="fas fa-arrow-up mr-1"></i> 12.5% desde el mes pasado
+                                    <h3 class="text-2xl font-bold mt-1" data-stat="total-sales">$0.00</h3>
+                                    <p class="text-green-500 text-sm mt-2" data-stat="sales-growth">
+                                        <i class="fas fa-arrow-up mr-1"></i> 0% desde el mes pasado
                                     </p>
                                 </div>
                                 <div class="bg-orange-100 p-3 rounded-lg">
@@ -112,8 +120,53 @@
                             </div>
                         </div>
                         
-                        <!-- Otras tarjetas (pedidos, clientes, productos) -->
-                        <!-- ... -->
+                        <!-- Tarjeta de pedidos -->
+                        <div class="card bg-white rounded-lg shadow-sm p-6">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-gray-500 text-sm">Total pedidos</p>
+                                    <h3 class="text-2xl font-bold mt-1" data-stat="total-orders">0</h3>
+                                    <p class="text-blue-500 text-sm mt-2">
+                                        <i class="fas fa-shopping-cart mr-1"></i> Órdenes registradas
+                                    </p>
+                                </div>
+                                <div class="bg-blue-100 p-3 rounded-lg">
+                                    <i class="fas fa-shopping-cart text-blue-600 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Tarjeta de clientes -->
+                        <div class="card bg-white rounded-lg shadow-sm p-6">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-gray-500 text-sm">Total clientes</p>
+                                    <h3 class="text-2xl font-bold mt-1" data-stat="total-customers">0</h3>
+                                    <p class="text-purple-500 text-sm mt-2">
+                                        <i class="fas fa-users mr-1"></i> Usuarios registrados
+                                    </p>
+                                </div>
+                                <div class="bg-purple-100 p-3 rounded-lg">
+                                    <i class="fas fa-users text-purple-600 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Tarjeta de productos -->
+                        <div class="card bg-white rounded-lg shadow-sm p-6">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-gray-500 text-sm">Total productos</p>
+                                    <h3 class="text-2xl font-bold mt-1" data-stat="total-products">0</h3>
+                                    <p class="text-green-500 text-sm mt-2">
+                                        <i class="fas fa-box mr-1"></i> En catálogo
+                                    </p>
+                                </div>
+                                <div class="bg-green-100 p-3 rounded-lg">
+                                    <i class="fas fa-box text-green-600 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
                     <!-- Gráficos -->
@@ -162,8 +215,25 @@
                                 <a href="orders.html" class="text-orange-600 hover:text-orange-800 text-sm">Ver todos</a>
                             </div>
                             <div class="overflow-x-auto">
-                                <table class="admin-table">
-                                    <!-- Tabla de pedidos -->
+                                <table id="recent-orders-table" class="min-w-full">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
+                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pago</th>
+                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        <tr>
+                                            <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                                                <i class="fas fa-spinner fa-spin mr-2"></i>
+                                                Cargando pedidos...
+                                            </td>
+                                        </tr>
+                                    </tbody>
                                 </table>
                             </div>
                         </div>
@@ -174,8 +244,11 @@
                                 <h3 class="font-semibold text-gray-800">Productos más vendidos</h3>
                                 <a href="products.html" class="text-orange-600 hover:text-orange-800 text-sm">Ver todos</a>
                             </div>
-                            <div>
-                                <!-- Lista de productos -->
+                            <div id="top-products-list">
+                                <div class="flex items-center justify-center py-8 text-gray-500">
+                                    <i class="fas fa-spinner fa-spin mr-2"></i>
+                                    Cargando productos...
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -187,17 +260,10 @@
     <!-- Incluir modales -->
     <div id="modals-container"></div>
     
+    <!-- Load AuthService first, then admin scripts -->
+    <script src="../assets/js/auth-service.js"></script>
+    <script src="../js/admin-login-fix.js"></script>
     <script src="scripts.js"></script>
-    <script>
-        // Configurar gráficos del dashboard
-        function setupCharts() {
-            // Configuración de gráficos Chart.js
-            // ...
-        }
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            setupCharts();
-        });
-    </script>
+    <script src="js/dashboard.js"></script>
 </body>
 </html>

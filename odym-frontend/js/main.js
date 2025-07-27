@@ -287,9 +287,50 @@ function closeCartModal() {
 }
 
 
+// Enhanced authentication guard for index.html
+function initializeAuthentication() {
+  // Validate session on page load
+  if (window.AuthCleanup) {
+    AuthCleanup.validateSession();
+  }
+  
+  // Check for stale sessions
+  const user = localStorage.getItem('user');
+  if (user) {
+    try {
+      const userData = JSON.parse(user);
+      
+      // Check if this is a stale session
+      const now = new Date().getTime();
+      const lastActivity = userData.lastActivity || 0;
+      
+      if (now - lastActivity > 24 * 60 * 60 * 1000) {
+        console.log('🧹 Sesión antigua detectada, limpiando...');
+        if (window.AuthCleanup) {
+          AuthCleanup.cleanupAll();
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error al validar sesión:', error);
+      localStorage.removeItem('user');
+    }
+  }
+}
+
 // Modifica el event listener del DOMContentLoaded
 document.addEventListener("DOMContentLoaded", function () {
+  // Initialize authentication guard
+  initializeAuthentication();
+  
   // Inicializar Auth (ya se inicializa automáticamente en auth.js)
+  if (window.AuthService) {
+    AuthService.init();
+  }
+  
+  // Initialize admin login fix
+  if (window.AdminLoginFix) {
+    AdminLoginFix.preventDualDisplay();
+  }
 
   // Configurar menú móvil
   const mobileMenuBtn = document.getElementById("mobileMenuBtn");

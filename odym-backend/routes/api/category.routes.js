@@ -17,9 +17,19 @@ async function categoryRoutes(fastify, options) {
 
   fastify.put('/:id', async (request, reply) => {
     try {
+      const categoryId = request.params.id;
+      const data = request.body;
+
+      if (!categoryId || !categoryId.match(/^[0-9a-fA-F]{24}$/)) {
+        return reply.status(400).send({ error: 'Invalid category ID format' });
+      }
+
+      const updatedCategory = await updateCategory(categoryId, data);
+
       if (!updatedCategory) {
         return reply.status(404).send({ error: 'Category not found' });
       }
+
       reply.send(updatedCategory);
     } catch (error) {
       reply.status(400).send({ error: error.message });
