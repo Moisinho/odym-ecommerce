@@ -1,62 +1,17 @@
+import Customer from '../models/Customer.js';
 import Order from '../models/Order.js';
-import User from '../models/User.js';
+import Payment from '../models/Payment.js';
 import Product from '../models/Product.js';
-import Stripe from 'stripe';
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+import stripe from './stripe.service.js';
 
 // Create order from cart
 export const createOrder = async (userId, shippingAddress) => {
   try {
-    const user = await User.findById(userId).populate('cart.productId');
-    if (!user) throw new Error('User not found');
-    if (user.cart.length === 0) throw new Error('Cart is empty');
-
-    // Validate stock and calculate total
-    let totalAmount = 0;
-    const orderItems = [];
-
-    for (const cartItem of user.cart) {
-      const product = await Product.findById(cartItem.productId);
-      if (!product) throw new Error(`Product ${cartItem.productId} not found`);
-      if (product.stock < cartItem.quantity) {
-        throw new Error(`Insufficient stock for ${product.name}`);
-      }
-
-      orderItems.push({
-        productId: product._id,
-        name: product.name,
-        price: product.price,
-        quantity: cartItem.quantity,
-        image: product.images?.[0] || ''
-      });
-
-      totalAmount += product.price * cartItem.quantity;
-    }
-
-    // Create order
-    const order = new Order({
-      userId,
-      items: orderItems,
-      totalAmount,
-      shippingAddress
-    });
-
-    await order.save();
-
-    // Update product stock
-    for (const item of orderItems) {
-      await Product.findByIdAndUpdate(
-        item.productId,
-        { $inc: { stock: -item.quantity } }
-      );
-    }
-
-    // Clear cart
-    user.cart = [];
-    await user.save();
-
-    return order;
+    const customer = await Customer.findById(userId);
+    if (!customer) throw new Error('Customer not found');
+    
+    // Note: Customer model doesn't have cart, so this function needs to be used with createOrderFromItems
+    throw new Error('Use createOrderFromItems for cart-based orders');
   } catch (error) {
     throw new Error('Error creating order: ' + error.message);
   }
@@ -123,7 +78,7 @@ export const createOrderFromItems = async (userId, items, shippingAddress) => {
 export const getOrderById = async (orderId) => {
   try {
     const order = await Order.findById(orderId)
-      .populate('userId', 'name email')
+      .populate('userId', 'fullName email phone address')
       .populate('items.productId', 'name images');
     
     if (!order) throw new Error('Order not found');
@@ -212,13 +167,114 @@ export const createPaymentIntent = async (orderId) => {
   }
 };
 
+// Create order from Stripe session
+export const createOrderFromStripeSession = async (session) => {
+  try {
+    const { metadata } = session;
+    const items = JSON.parse(metadata.cart);
+    const userId = metadata.userId !== 'guest' ? metadata.userId : null;
+
+    // Get product details
+    const productIds = items.map(item => item.productId);
+    const products = await Product.find({ _id: { $in: productIds } });
+
+    // Prepare order items
+    const orderItems = items.map(item => {
+      const product = products.find(p => p._id.toString() === item.productId);
+      return {
+        productId: product._id,
+        name: product.name,
+        price: product.price,
+        quantity: item.quantity,
+        image: product.images?.[0] || ''
+      };
+    });
+
+    // Create basic shipping address from session
+    const shippingAddress = {
+      firstName: session.customer_details?.name?.split(' ')[0] || 'Customer',
+      lastName: session.customer_details?.name?.split(' ').slice(1).join(' ') || '',
+      email: session.customer_email,
+      phone: session.customer_details?.phone || '',
+      address: session.customer_details?.address?.line1 || '',
+      city: session.customer_details?.address?.city || '',
+      postalCode: session.customer_details?.address?.postal_code || '',
+      country: session.customer_details?.address?.country || 'US'
+    };
+
+    const order = new Order({
+      userId,
+      items: orderItems,
+      totalAmount: session.amount_total / 100, // Convert from cents
+      shippingAddress,
+      status: 'processing',
+      paymentStatus: 'paid',
+      paymentIntentId: session.payment_intent
+    });
+
+    await order.save();
+
+    // Create payment record
+    const payment = new Payment({
+      orderId: order._id,
+      userId: userId || order._id, // Use order ID if guest
+      stripeSessionId: session.id,
+      stripePaymentIntentId: session.payment_intent,
+      amount: session.amount_total / 100,
+      currency: session.currency,
+      status: 'succeeded',
+      customerEmail: session.customer_email,
+      billingDetails: {
+        name: session.customer_details?.name,
+        email: session.customer_email,
+        phone: session.customer_details?.phone,
+        address: session.customer_details?.address
+      },
+      processedAt: new Date()
+    });
+
+    await payment.save();
+
+    // Update product stock
+    for (const item of items) {
+      await Product.findByIdAndUpdate(
+        item.productId,
+        { $inc: { stock: -item.quantity } }
+      );
+    }
+
+    return { order, payment };
+  } catch (error) {
+    throw new Error('Error creating order from Stripe session: ' + error.message);
+  }
+};
+
+// Get order with payment details
+export const getOrderWithPayment = async (orderId) => {
+  try {
+    const order = await Order.findById(orderId)
+      .populate('userId', 'fullName email phone address')
+      .populate('items.productId', 'name price images');
+    
+    if (!order) {
+      throw new Error('Order not found');
+    }
+
+    const payment = await Payment.findOne({ orderId });
+    
+    return { order, payment };
+  } catch (error) {
+    throw new Error('Error fetching order with payment: ' + error.message);
+  }
+};
+
 // Get all orders (admin)
 export const getAllOrders = async (page = 1, limit = 10) => {
   try {
     const skip = (page - 1) * limit;
     
     const orders = await Order.find()
-      .populate('userId', 'name email')
+      .populate('userId', 'fullName email phone address')
       .populate('items.productId', 'name images')
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -229,13 +285,42 @@ export const getAllOrders = async (page = 1, limit = 10) => {
     return {
       orders,
       pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+        totalItems: total,
+        itemsPerPage: limit,
+        showingFrom: skip + 1,
+        showingTo: Math.min(skip + limit, total)
       }
     };
   } catch (error) {
     throw new Error('Error fetching orders: ' + error.message);
+  }
+};
+
+// Delete order (admin)
+export const deleteOrder = async (orderId) => {
+  try {
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return null;
+    }
+    
+    // Restore product stock before deleting order
+    for (const item of order.items) {
+      await Product.findByIdAndUpdate(
+        item.productId,
+        { $inc: { stock: item.quantity } }
+      );
+    }
+    
+    // Delete associated payment if exists
+    await Payment.findOneAndDelete({ orderId });
+    
+    // Delete the order
+    const result = await Order.findByIdAndDelete(orderId);
+    return result;
+  } catch (error) {
+    throw new Error('Error deleting order: ' + error.message);
   }
 };

@@ -54,14 +54,15 @@ export async function loginCustomer(request, reply) {
       fullName: customer.fullName,
       username: customer.username,
       email: customer.email,
-      subscription: customer.subscription
+      subscription: customer.subscription,
+      role: customer.role
     }
   };
 }
 
 export async function registerCustomer(request, reply) {
   try {
-    const { fullName, username, email, password, subscription, phone, address } = request.body;
+    const { fullName, username, email, password, subscription, phone, address, role } = request.body;
 
     // Verificar duplicados antes de crear
     const existingUsername = await Customer.findOne({ username });
@@ -84,7 +85,8 @@ export async function registerCustomer(request, reply) {
       password: hashedPassword,
       subscription: subscription || 'ODYM User',
       phone, 
-      address 
+      address,
+      role: role || 'user'
     });
 
     return reply.status(201).send({ 
@@ -94,7 +96,8 @@ export async function registerCustomer(request, reply) {
         fullName: customer.fullName,
         username: customer.username,
         email: customer.email,
-        subscription: customer.subscription
+        subscription: customer.subscription,
+        role: customer.role
       } 
     });
   } catch (error) {
@@ -111,11 +114,11 @@ export async function registerCustomer(request, reply) {
 
 export async function updateCustomer(request, reply) {
   const { id } = request.params;
-  const { fullName, username, email, password, subscription, phone, address } = request.body;
+  const { fullName, username, email, password, subscription, phone, address, role } = request.body;
 
   const customer = await Customer.findByIdAndUpdate(
     id, 
-    { fullName, username, email, password, subscription, phone, address }, 
+    { fullName, username, email, password, subscription, phone, address, role }, 
     { new: true }
   );
 
@@ -126,4 +129,31 @@ export async function deleteCustomer(request, reply) {
   const { id } = request.params;
   await Customer.findByIdAndDelete(id);
   return reply.status(200).send({ mensaje: 'Cliente eliminado exitosamente' });
+}
+
+// Función para verificar si un usuario es admin
+export async function isAdmin(customerId) {
+  try {
+    const customer = await Customer.findById(customerId);
+    return customer && customer.role === 'admin';
+  } catch (error) {
+    console.error('Error checking admin status:', error);
+    return false;
+  }
+}
+
+// Middleware para verificar autenticación de admin
+export async function verifyAdmin(request, reply) {
+  const { customerId } = request.body;
+  
+  if (!customerId) {
+    return reply.status(401).send({ error: 'ID de usuario requerido' });
+  }
+  
+  const adminStatus = await isAdmin(customerId);
+  if (!adminStatus) {
+    return reply.status(403).send({ error: 'Acceso denegado. Se requieren permisos de administrador.' });
+  }
+  
+  return true;
 }

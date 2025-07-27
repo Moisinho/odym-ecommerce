@@ -1,12 +1,12 @@
-import { 
-  createOrder, 
+import {
+  createOrder,
   createOrderFromItems,
-  getOrderById, 
-  getUserOrders, 
-  updateOrderStatus, 
-  updatePaymentStatus,
   createPaymentIntent,
-  getAllOrders 
+  getAllOrders,
+  getOrderById,
+  getUserOrders,
+  updateOrderStatus,
+  updatePaymentStatus
 } from '../../services/order.service.js';
 
 async function orderRoutes(fastify, options) {
@@ -217,6 +217,40 @@ async function orderRoutes(fastify, options) {
       });
     } catch (error) {
       reply.status(400).send({ error: error.message });
+    }
+  });
+
+  // Delete order (admin)
+  fastify.delete('/:id', async (request, reply) => {
+    const orderId = request.params.id;
+    
+    // Validate ObjectId format
+    if (!orderId || !orderId.match(/^[0-9a-fA-F]{24}$/)) {
+      reply.status(400).send({ 
+        error: 'Invalid order ID format',
+        details: 'Order ID must be a valid 24-character hexadecimal string'
+      });
+      return;
+    }
+    
+    try {
+      const deleted = await deleteOrder(orderId);
+      if (!deleted) {
+        reply.status(404).send({ error: 'Order not found' });
+        return;
+      }
+      
+      reply.status(200).send({ 
+        success: true,
+        message: 'Order deleted successfully',
+        deletedId: orderId 
+      });
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      reply.status(500).send({ 
+        error: 'Internal server error',
+        details: error.message 
+      });
     }
   });
 }

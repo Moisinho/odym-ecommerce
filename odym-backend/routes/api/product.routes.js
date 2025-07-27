@@ -13,14 +13,12 @@ import { uploadImage } from '../../services/imgbb.service.js';
 async function productRoutes(fastify, options) {
   // Obtener todos los productos
   fastify.get('/', async (request, reply) => {
-    console.log('GET /api/products called');
     const products = await getProducts();
     reply.send(products);
   });
 
   // Obtener productos con stock disponible
   fastify.get('/available', async (request, reply) => {
-    console.log('GET /api/products/available called');
     const products = await getProductsWithStock();
     reply.send(products);
   });
@@ -28,11 +26,9 @@ async function productRoutes(fastify, options) {
   // Obtener producto por ID (MOVIDO AQUÍ PARA EVITAR CONFLICTOS)
   fastify.get('/:id', async (request, reply) => {
     const { id } = request.params;
-    console.log('GET /api/products/:id called with id:', id);
     
     // Validate ObjectId format
     if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
-      console.log('Invalid ObjectId format:', id);
       reply.status(400).send({ 
         error: 'Invalid product ID format',
         details: 'Product ID must be a valid 24-character hexadecimal string'
@@ -42,7 +38,6 @@ async function productRoutes(fastify, options) {
     
     try {
       const product = await getProductById(id);
-      console.log('Product found:', product.name);
       reply.send(product);
     } catch (error) {
       console.error('Error getting product:', error);
@@ -81,7 +76,6 @@ async function productRoutes(fastify, options) {
   });
 
   fastify.post('/', async (request, reply) => {
-    console.log('POST /api/products called with body:', request.body);
     try {
       // Process images: upload base64 images to imgBB, keep existing URLs as is
       if (request.body.images && Array.isArray(request.body.images)) {
@@ -128,11 +122,9 @@ async function productRoutes(fastify, options) {
 
   fastify.delete('/:id', async function (request, reply) {
     const productId = request.params.id;
-    console.log('DELETE /api/products/:id called with id:', productId);
     
     // Validate ObjectId format
     if (!productId || !productId.match(/^[0-9a-fA-F]{24}$/)) {
-      console.log('Invalid ObjectId format:', productId);
       reply.status(400).send({ 
         error: 'Invalid product ID format',
         details: 'Product ID must be a valid 24-character hexadecimal string'
@@ -143,12 +135,10 @@ async function productRoutes(fastify, options) {
     try {
       const deleted = await deleteProduct(productId);
       if (!deleted) {
-        console.log('Product not found:', productId);
         reply.status(404).send({ error: 'Product not found' });
         return;
       }
       
-      console.log('Product deleted successfully:', productId);
       reply.status(200).send({ 
         success: true,
         message: 'Product deleted successfully',

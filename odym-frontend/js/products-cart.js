@@ -1,9 +1,6 @@
 // Función para agregar productos desde la página de productos
 async function addProductToCart(productId, quantity = 1) {
     try {
-        console.log('Agregando producto real:', productId, 'cantidad:', quantity);
-        
-        // Obtener detalles del producto desde la BD
         const response = await fetch(`${API_BASE_URL}/products/${productId}`);
         if (!response.ok) {
             throw new Error('Producto no encontrado');
@@ -19,7 +16,6 @@ async function addProductToCart(productId, quantity = 1) {
         
         if (existingItem) {
             existingItem.quantity += quantity;
-            console.log('Incrementando cantidad:', existingItem.quantity);
         } else {
             // Agregar nuevo producto con datos reales
             cart.push({
@@ -34,7 +30,6 @@ async function addProductToCart(productId, quantity = 1) {
                     stock: product.stock
                 }
             });
-            console.log('Nuevo producto agregado:', product.name);
         }
         
         // Guardar en localStorage
@@ -96,7 +91,6 @@ function getCartSummary() {
 // Función para sincronizar carrito con backend (cuando haya autenticación)
 async function syncCartWithBackend() {
     // Esta función se usará cuando implementemos autenticación
-    console.log('Sincronización con backend pendiente de autenticación');
 }
 
 // Hacer funciones disponibles globalmente

@@ -5,92 +5,63 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pago Cancelado - ODYM</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body class="bg-gray-50">
-    <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-md w-full space-y-8">
-            <div class="text-center">
-                <div class="mx-auto flex items-center justify-center h-24 w-24 rounded-full bg-red-100 mb-6">
-                    <i class="fas fa-times text-red-600 text-4xl"></i>
-                </div>
-                <h2 class="text-3xl font-extrabold text-gray-900 mb-2">
-                    Pago Cancelado
-                </h2>
-                <p class="text-gray-600 mb-6">
-                    Tu pago ha sido cancelado. No se ha realizado ningún cargo.
-                </p>
-            </div>
+    <!-- Header -->
+    <div id="header"></div>
 
-            <div class="bg-white shadow rounded-lg p-6">
-                <div class="border-b border-gray-200 pb-4 mb-4">
-                    <h3 class="text-lg font-medium text-gray-900">¿Qué pasó?</h3>
-                </div>
-                
-                <div class="space-y-3 text-gray-600">
-                    <p>El proceso de pago fue cancelado. Esto puede haber ocurrido por:</p>
-                    <ul class="list-disc list-inside space-y-1 ml-4">
-                        <li>Cancelaste el pago voluntariamente</li>
-                        <li>Hubo un problema con tu método de pago</li>
-                        <li>La sesión de pago expiró</li>
-                    </ul>
-                </div>
+    <main class="container mx-auto px-4 py-16">
+        <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8 text-center">
+            <div class="mb-6">
+                <i class="fas fa-exclamation-triangle text-6xl text-orange-500"></i>
             </div>
-
-            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <div class="flex">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-exclamation-triangle text-yellow-400"></i>
-                    </div>
-                    <div class="ml-3">
-                        <h3 class="text-sm font-medium text-yellow-800">
-                            Tu carrito se mantiene guardado
-                        </h3>
-                        <div class="mt-2 text-sm text-yellow-700">
-                            <p>No te preocupes, todos los productos que agregaste a tu carrito siguen ahí. Puedes intentar realizar el pago nuevamente cuando estés listo.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex space-x-4">
-                <a href="/index.html" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg text-center transition duration-200">
-                    Continuar Comprando
+            <h1 class="text-3xl font-bold text-gray-900 mb-4">Pago Cancelado</h1>
+            <p class="text-gray-600 mb-6">El proceso de pago ha sido cancelado. Tu carrito sigue disponible para que puedas completar tu compra cuando estés listo.</p>
+            
+            <div class="space-y-4">
+                <a href="index.html" class="inline-block bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300">
+                    <i class="fas fa-home mr-2"></i> Volver al inicio
                 </a>
-                <button onclick="goToCart()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-4 rounded-lg text-center transition duration-200">
-                    Ver Carrito
-                </button>
-            </div>
-
-            <div class="text-center">
-                <p class="text-sm text-gray-500">
-                    ¿Necesitas ayuda? 
-                    <a href="mailto:support@odym.com" class="text-blue-600 hover:text-blue-500">
-                        Contáctanos
-                    </a>
-                </p>
+                <a href="products.html" class="inline-block bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-6 rounded-lg transition duration-300">
+                    <i class="fas fa-shopping-cart mr-2"></i> Ver carrito
+                </a>
             </div>
         </div>
-    </div>
+    </main>
 
+    <!-- Footer -->
+    <div id="footer"></div>
+
+    <!-- Scripts necesarios para mantener la sesión -->
+    <script src="assets/js/auth-service.js"></script>
+    <script src="js/cart-global.js"></script>
+    
     <script>
-        function goToCart() {
-            // Redirigir a la página principal y abrir el carrito
-            window.location.href = '/index.html#cart';
-        }
-
-        // Restaurar información del carrito si existe
-        document.addEventListener('DOMContentLoaded', function() {
-            const pendingOrder = localStorage.getItem('pendingOrder');
-            if (pendingOrder) {
-                try {
-                    const orderData = JSON.parse(pendingOrder);
-                    console.log('Restored cart from cancelled payment:', orderData);
-                    // El carrito debería mantenerse en localStorage
-                } catch (error) {
-                    console.error('Error parsing pending order:', error);
+        // Cargar header y footer con inicialización completa
+        Promise.all([
+            fetch('partials/header.html').then(r => r.text()),
+            fetch('partials/footer.html').then(r => r.text())
+        ]).then(([header, footer]) => {
+            document.getElementById('header').innerHTML = header;
+            document.getElementById('footer').innerHTML = footer;
+            
+            // Inicializar AuthService después de cargar el header
+            setTimeout(() => {
+                if (typeof AuthService !== 'undefined') {
+                    AuthService.init();
+                    // Asegurar que el menú de usuario se inicialice correctamente
+                    if (typeof AuthService.initUserMenu === 'function') {
+                        AuthService.initUserMenu();
+                    }
                 }
-            }
+                
+                // Actualizar contador del carrito (no se limpia en cancel)
+                if (typeof updateCartCount === 'function') {
+                    updateCartCount();
+                }
+            }, 100);
         });
     </script>
 </body>

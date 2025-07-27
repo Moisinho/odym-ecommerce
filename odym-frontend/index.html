@@ -12,6 +12,23 @@
 <body>
     <!-- Header -->
     <div id="header"></div>
+    <script>
+        // Esperar a que el header se cargue y luego inicializar AuthService para el menú de usuario
+        document.addEventListener('DOMContentLoaded', () => {
+            const headerDiv = document.getElementById('header');
+            if (headerDiv) {
+                const observer = new MutationObserver((mutations, obs) => {
+                    if (headerDiv.innerHTML.trim().length > 0) {
+                        if (window.AuthService && typeof window.AuthService.initUserMenu === 'function') {
+                            window.AuthService.initUserMenu();
+                        }
+                        obs.disconnect();
+                    }
+                });
+                observer.observe(headerDiv, { childList: true });
+            }
+        });
+    </script>
 
     <!-- Contenido Principal -->
     <main>
@@ -99,8 +116,15 @@
     <!-- Modales -->
     <div id="modals"></div>
 
+    <script src="js/products.js"></script>
+    <script src="js/cart-global.js"></script>
+    
+    <script src="js/index-products.js"></script>
+    <script src="js/products-api.js"></script>
+    <script src="js/main.js"></script>
+    <script src="assets/js/auth-service.js"></script>
     <script>
-        // Cargar todos los partials y luego inicializar AuthService
+        // Cargar todos los partials y luego inicializar
         Promise.all([
           fetch('partials/header.html').then(r => r.text()),
           fetch('partials/footer.html').then(r => r.text()),
@@ -110,16 +134,19 @@
           document.getElementById('footer').innerHTML = footer;
           document.getElementById('modals').innerHTML = modals;
       
-          AuthService.init();
+          // Inicializar después de cargar los modales
+          setTimeout(() => {
+            if (typeof AuthService !== 'undefined') {
+              AuthService.init();
+            }
+            if (typeof updateCartCount === 'function') {
+              updateCartCount();
+            }
+          }, 100);
+        }).catch(error => {
+          console.error('Error loading partials:', error);
         });
       </script>
-    <script src="/auth/auth.js"></script>
-    <script src="js/cart.js"></script>
-    <script src="js/products.js"></script>
-    <script src="js/index-products.js"></script>
-    <script src="js/products-api.js"></script>
-    <script src="js/main.js"></script>
-    <script src="assets/js/auth-service.js"></script>
     
 </body>
 </html>

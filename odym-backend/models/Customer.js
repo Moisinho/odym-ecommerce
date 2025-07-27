@@ -8,6 +8,11 @@ const customerSchema = new mongoose.Schema({
   subscription: { type: String, required: true },
   phone: { type: String, required: true},
   address: { type: String, required: true},
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user'
+  }
 });
 
 const Customer = mongoose.model('Customer', customerSchema);
