@@ -6,8 +6,259 @@
     <title>ODYM Admin - Facturas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <!-- Loading state -->
+    <div id="admin-loading" class="fixed inset-0 bg-gray-100 flex items-center justify-center z-50">
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
+            <p class="text-gray-600">Verificando autenticación...</p>
+        </div>
+    </div>
+
+    <div id="admin-dashboard" class="flex h-screen bg-gray-100" style="display: none;">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="bg-white shadow-md w-64 fixed h-full z-30 overflow-y-auto">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center">
+                    <span class="text-2xl font-extrabold text-gray-800">OD<span class="text-orange-600">YM</span></span>
+                    <span class="ml-2 text-sm font-medium text-gray-600">Admin</span>
+                </div>
+            </div>
+            
+            <nav class="mt-6">
+                <!-- Menú de navegación -->
+                <div class="px-4 mb-2">
+                    <p class="text-xs uppercase tracking-wider text-gray-500">General</p>
+                </div>
+                <a href="index.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-tachometer-alt mr-3"></i>
+                    <span>Dashboard</span>
+                </a>
+                <div class="px-4 mt-6 mb-2">
+                    <p class="text-xs uppercase tracking-wider text-gray-500">Gestión</p>
+                </div>
+                <a href="products.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-box mr-3"></i>
+                    <span>Productos</span>
+                </a>
+                <a href="categories.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-tags mr-3"></i>
+                    <span>Categorías</span>
+                </a>
+                <a href="orders.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-shopping-cart mr-3"></i>
+                    <span>Pedidos</span>
+                </a>
+                <a href="bills.html" class="sidebar-link flex items-center px-6 py-3 active">
+                    <i class="fas fa-file-invoice mr-3"></i>
+                    <span>Facturas</span>
+                </a>
+                <a href="clients.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-users mr-3"></i>
+                    <span>Clientes</span>
+                </a>
+                <a href="admins.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-user-shield mr-3"></i>
+                    <span>Administradores</span>
+                </a>
+                <a href="distributors.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-motorcycle mr-3"></i>
+                    <span>Repartidores</span>
+                </a>
+                <a href="subscriptions.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-crown mr-3"></i>
+                    <span>Suscripciones</span>
+                </a>
+                <div class="px-4 mt-6 mb-2">
+                    <p class="text-xs uppercase tracking-wider text-gray-500">Configuración</p>
+                </div>
+                <a href="settings.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-cog mr-3"></i>
+                    <span>Ajustes</span>
+                </a>
+                <a href="#" onclick="adminLogout()" class="sidebar-link flex items-center px-6 py-3 text-red-600 hover:bg-red-100">
+                    <i class="fas fa-sign-out-alt mr-3"></i>
+                    <span>Cerrar sesión</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Contenido principal -->
+        <div class="flex-1 ml-64">
+            <!-- Header -->
+            <header class="bg-white shadow-sm py-4 px-6 flex justify-between items-center">
+                <div class="flex items-center">
+                    <button id="sidebarToggle" class="mr-4 text-gray-600 hover:text-gray-800 md:hidden">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 class="text-xl font-semibold text-gray-800">Facturas</h1>
+                </div>
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-orange-600 rounded-full flex items-center justify-center text-white mr-2">
+                        A
+                    </div>
+                    <div>
+                        <p class="font-medium text-sm" id="admin-name">Admin User</p>
+                        <p class="text-xs text-gray-500">Administrador</p>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Contenido de Facturas -->
+            <main class="p-6">
+                <div class="bg-white rounded-lg shadow-sm">
+                    <!-- Header de la tabla -->
+                    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                        <div>
+                            <h2 class="text-lg font-semibold text-gray-800">Gestión de Facturas</h2>
+                            <p class="text-sm text-gray-600">Administra todas las facturas del sistema</p>
+                        </div>
+                        <div class="flex space-x-3">
+                            <button id="newBillBtn" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg flex items-center">
+                                <i class="fas fa-plus mr-2"></i>
+                                Nueva Factura
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filtros -->
+                    <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                        <div class="flex flex-wrap gap-4">
+                            <div class="flex-1 min-w-64">
+                                <input type="text" placeholder="Buscar por número de factura, cliente..." 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabla -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Pedido</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Emisión</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Método Pago</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="billsTableBody" class="bg-white divide-y divide-gray-200 text-center">
+                                <tr>
+                                    <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                                        <i class="fas fa-file-invoice text-4xl mb-4 text-gray-300"></i>
+                                        <p>No hay facturas registradas</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    </div>
+
+    <!-- Modal de Factura -->
+    <div id="billModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="billModalTitle" class="text-lg font-semibold">Nueva Factura</h3>
+                <button id="closeModalBtn" type="button" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="billForm">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Pedido *</label>
+                        <select name="orderId" id="orderSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" required>
+                            <option value="">Seleccionar pedido</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Cliente *</label>
+                        <select name="customerId" id="customerSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" required>
+                            <option value="">Seleccionar cliente</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Emisión *</label>
+                        <input type="date" name="issueDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Total *</label>
+                        <input type="number" name="total" step="0.01" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" required>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Método de Pago *</label>
+                        <select name="paymentMethod" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" required>
+                            <option value="">Seleccionar método</option>
+                            <option value="efectivo">Efectivo</option>
+                            <option value="tarjeta">Tarjeta</option>
+                            <option value="transferencia">Transferencia</option>
+                            <option value="paypal">PayPal</option>
+                            <option value="stripe">Stripe</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Detalles de Pago *</label>
+                    <textarea name="paymentDetails" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Detalles sobre el pago realizado..." required></textarea>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" id="cancelBillBtn" class="px-4 py-2 text-gray-600 hover:text-gray-800">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700">
+                        Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin common scripts -->
+    <script src="js/admin-common.js"></script>
+    <script src="js/bills.js"></script>
+    <script>
+        // Bills page specific functionality
+        let billsInitialized = false;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            // Wait for admin common to initialize, then show bills page
+            setTimeout(() => {
+                const user = AuthService.getUser();
+                if (user && AuthService.isAdmin(user)) {
+                    // Hide loading and show dashboard
+                    document.getElementById('admin-loading').style.display = 'none';
+                    document.getElementById('admin-dashboard').style.display = 'flex';
+                    
+                    // Initialize bills functionality only once
+                    if (window.BillsApp && !billsInitialized) {
+                        billsInitialized = true;
+                        window.BillsApp.init();
+                        console.log('✅ Página de facturas inicializada');
+                    } else if (billsInitialized) {
+                        console.log('⚠️ BillsApp ya está inicializado');
+                    } else {
+                        console.error('❌ BillsApp no está disponible');
+                    }
+                }
+            }, 100);
+        });
+    </script>
+
+</body>
+</html>
     <div class="flex h-screen bg-gray-100">
         <!-- Sidebar Placeholder -->
         <div id="sidebar-container"></div>

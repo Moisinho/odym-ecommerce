@@ -6,16 +6,105 @@
     <title>ODYM Admin - Suscripciones</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="flex h-screen bg-gray-100">
-        <!-- Sidebar Placeholder -->
-        <div id="sidebar-container"></div>
+    <!-- Loading state -->
+    <div id="admin-loading" class="fixed inset-0 bg-gray-100 flex items-center justify-center z-50">
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
+            <p class="text-gray-600">Verificando autenticación...</p>
+        </div>
+    </div>
+
+    <div id="admin-dashboard" class="flex h-screen bg-gray-100" style="display: none;">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="bg-white shadow-md w-64 fixed h-full z-30 overflow-y-auto">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center">
+                    <span class="text-2xl font-extrabold text-gray-800">OD<span class="text-orange-600">YM</span></span>
+                    <span class="ml-2 text-sm font-medium text-gray-600">Admin</span>
+                </div>
+            </div>
+            
+            <nav class="mt-6">
+                <!-- Menú de navegación -->
+                <div class="px-4 mb-2">
+                    <p class="text-xs uppercase tracking-wider text-gray-500">General</p>
+                </div>
+                <a href="index.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-tachometer-alt mr-3"></i>
+                    <span>Dashboard</span>
+                </a>
+                <div class="px-4 mt-6 mb-2">
+                    <p class="text-xs uppercase tracking-wider text-gray-500">Gestión</p>
+                </div>
+                <a href="products.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-box mr-3"></i>
+                    <span>Productos</span>
+                </a>
+                <a href="categories.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-tags mr-3"></i>
+                    <span>Categorías</span>
+                </a>
+                <a href="orders.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-shopping-cart mr-3"></i>
+                    <span>Pedidos</span>
+                </a>
+                <a href="bills.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-file-invoice mr-3"></i>
+                    <span>Facturas</span>
+                </a>
+                <a href="clients.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-users mr-3"></i>
+                    <span>Clientes</span>
+                </a>
+                <a href="admins.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-user-shield mr-3"></i>
+                    <span>Administradores</span>
+                </a>
+                <a href="distributors.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-motorcycle mr-3"></i>
+                    <span>Repartidores</span>
+                </a>
+                <a href="subscriptions.html" class="sidebar-link flex items-center px-6 py-3 active">
+                    <i class="fas fa-crown mr-3"></i>
+                    <span>Suscripciones</span>
+                </a>
+                <div class="px-4 mt-6 mb-2">
+                    <p class="text-xs uppercase tracking-wider text-gray-500">Configuración</p>
+                </div>
+                <a href="settings.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-cog mr-3"></i>
+                    <span>Ajustes</span>
+                </a>
+                <a href="#" onclick="adminLogout()" class="sidebar-link flex items-center px-6 py-3 text-red-600 hover:bg-red-100">
+                    <i class="fas fa-sign-out-alt mr-3"></i>
+                    <span>Cerrar sesión</span>
+                </a>
+            </nav>
+        </aside>
 
         <!-- Contenido principal -->
         <div class="flex-1 ml-64">
-            <!-- Header Placeholder -->
-            <div id="header-container"></div>
+            <!-- Header -->
+            <header class="bg-white shadow-sm py-4 px-6 flex justify-between items-center">
+                <div class="flex items-center">
+                    <button id="sidebarToggle" class="mr-4 text-gray-600 hover:text-gray-800 md:hidden">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 class="text-xl font-semibold text-gray-800">Suscripciones</h1>
+                </div>
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-orange-600 rounded-full flex items-center justify-center text-white mr-2">
+                        A
+                    </div>
+                    <div>
+                        <p class="font-medium text-sm" id="admin-name">Admin User</p>
+                        <p class="text-xs text-gray-500">Administrador</p>
+                    </div>
+                </div>
+            </header>
 
             <!-- Contenido de Suscripciones -->
             <main class="p-6">
@@ -24,12 +113,24 @@
                     <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                         <div>
                             <h2 class="text-lg font-semibold text-gray-800">Gestión de Suscripciones</h2>
-                            <p class="text-sm text-gray-600">Administra los planes y suscriptores</p>
+                            <p class="text-sm text-gray-600">Administra los planes y suscripciones de usuarios</p>
                         </div>
-                        <button id="newPlanBtn" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg flex items-center">
-                            <i class="fas fa-plus mr-2"></i>
-                            Nuevo Plan
-                        </button>
+                        <div class="flex space-x-3">
+                            <button id="newSubscriptionBtn" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg flex items-center">
+                                <i class="fas fa-plus mr-2"></i>
+                                Nueva Suscripción
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filtros -->
+                    <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                        <div class="flex flex-wrap gap-4">
+                            <div class="flex-1 min-w-64">
+                                <input type="text" placeholder="Buscar por plan, usuario, estado..." 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Tabla -->
@@ -37,15 +138,20 @@
                         <table class="w-full">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Suscriptores</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo de Suscripción</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Precio</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Duración</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody id="plansTableBody" class="bg-white divide-y divide-gray-200">
-                                <!-- Los planes se cargarán dinámicamente desde JavaScript -->
+                            <tbody id="subscriptionsTableBody" class="bg-white divide-y divide-gray-200 text-center">
+                                <tr>
+                                    <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                                        <i class="fas fa-crown text-4xl mb-4 text-gray-300"></i>
+                                        <p>No hay suscripciones registradas</p>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -53,57 +159,57 @@
             </main>
         </div>
     </div>
-    <!-- Modal de Plan de Suscripción -->
-    <div id="planModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+
+    </div>
+
+    <!-- Modal de Suscripción -->
+    <div id="subscriptionModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-4">
-                <h3 id="planModalTitle" class="text-lg font-semibold">Nuevo Plan</h3>
+                <h3 id="subscriptionModalTitle" class="text-lg font-semibold">Nueva Suscripción</h3>
                 <button id="closeModalBtn" type="button" class="text-gray-400 hover:text-gray-600">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <form id="planForm">
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Nombre del Plan</label>
-                    <input type="text" id="planName" name="name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" required>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
-                    <textarea id="planDescription" name="description" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" required></textarea>
-                </div>
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Precio</label>
-                        <input type="number" id="planPrice" name="price" step="0.01" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" required>
+            <form id="subscriptionForm">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Suscripción *</label>
+                        <select name="subscriptionType" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" required>
+                            <option value="">Seleccionar tipo</option>
+                            <option value="God">God</option>
+                            <option value="User">User</option>
+                        </select>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Duración (días)</label>
-                        <input type="number" id="planDuration" name="duration" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" required>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Precio *</label>
+                        <input type="number" name="price" step="0.01" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" required>
                     </div>
                 </div>
                 <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Características</label>
-                    <div id="featuresContainer">
-                        <div class="feature-item flex items-center mb-2">
-                            <input type="text" name="features[]" class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Característica del plan">
-                            <button type="button" class="remove-feature ml-2 text-red-500 hover:text-red-700">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <button type="button" id="addFeatureBtn" class="mt-2 text-sm text-orange-600 hover:text-orange-800">
-                        <i class="fas fa-plus mr-1"></i> Agregar característica
-                    </button>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
-                    <select id="planStatus" name="status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
-                        <option value="active">Activo</option>
-                        <option value="inactive">Inactivo</option>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Duración *</label>
+                    <select name="duration" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" required>
+                        <option value="">Seleccionar duración</option>
+                        <option value="1 month">1 mes</option>
+                        <option value="infinite">Infinita</option>
                     </select>
                 </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Descripción *</label>
+                    <textarea name="description" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" required placeholder="Describe los beneficios y características de esta suscripción..."></textarea>
+                </div>
+                
+                <!-- Información de beneficios predefinidos -->
+                <div class="mb-4 p-4 bg-blue-50 rounded-lg">
+                    <h4 class="text-sm font-medium text-blue-800 mb-2">Beneficios por tipo de suscripción:</h4>
+                    <div class="text-xs text-blue-700">
+                        <p><strong>God ($30):</strong> 30% descuento en todos los productos + Caja de productos en compra y renovación</p>
+                        <p><strong>User (Gratis):</strong> Acceso básico a la plataforma</p>
+                    </div>
+                </div>
+                
                 <div class="flex justify-end space-x-3">
-                    <button type="button" id="cancelPlanBtn" class="px-4 py-2 text-gray-600 hover:text-gray-800">
+                    <button type="button" id="cancelSubscriptionBtn" class="px-4 py-2 text-gray-600 hover:text-gray-800">
                         Cancelar
                     </button>
                     <button type="submit" class="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700">
@@ -114,9 +220,36 @@
         </div>
     </div>
 
-    <script src="./js/main.js"></script>
-    <script src="./js/api.js"></script>
-    <script src="./js/utils.js"></script>
-    <script src="./js/subscriptions.js"></script>
+    <!-- Admin common scripts -->
+    <script src="js/admin-common.js"></script>
+    <script src="js/subscriptions.js"></script>
+    <script>
+        // Subscriptions page specific functionality
+        let subscriptionsInitialized = false;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            // Wait for admin common to initialize, then show subscriptions page
+            setTimeout(() => {
+                const user = AuthService.getUser();
+                if (user && AuthService.isAdmin(user)) {
+                    // Hide loading and show dashboard
+                    document.getElementById('admin-loading').style.display = 'none';
+                    document.getElementById('admin-dashboard').style.display = 'flex';
+                    
+                    // Initialize subscriptions functionality only once
+                    if (window.SubscriptionsApp && !subscriptionsInitialized) {
+                        subscriptionsInitialized = true;
+                        window.SubscriptionsApp.init();
+                        console.log('✅ Página de suscripciones inicializada');
+                    } else if (subscriptionsInitialized) {
+                        console.log('⚠️ SubscriptionsApp ya está inicializado');
+                    } else {
+                        console.error('❌ SubscriptionsApp no está disponible');
+                    }
+                }
+            }, 100);
+        });
+    </script>
+
 </body>
 </html>

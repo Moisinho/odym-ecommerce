@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Scripts</title>
+</head>
+<body>
+    <h1>Test de Scripts</h1>
+    <div id="test-results"></div>
+    
+    <script>
+        console.log('Test script cargado correctamente');
+        document.getElementById('test-results').innerHTML = '<p>Script principal funcionando</p>';
+    </script>
+    
+    <!-- Test auth-service.js -->
+    <script src="../assets/js/auth-service.js"></script>
+    <script>
+        setTimeout(() => {
+            if (typeof AuthService !== 'undefined') {
+                console.log('✅ AuthService cargado correctamente');
+                document.getElementById('test-results').innerHTML += '<p>✅ AuthService: OK</p>';
+            } else {
+                console.error('❌ AuthService no se cargó');
+                document.getElementById('test-results').innerHTML += '<p>❌ AuthService: FALLO</p>';
+            }
+        }, 100);
+    </script>
+    
+    <!-- Test admin-login-fix.js -->
+    <script src="../js/admin-login-fix.js"></script>
+    <script>
+        setTimeout(() => {
+            if (typeof AdminLoginFix !== 'undefined') {
+                console.log('✅ AdminLoginFix cargado correctamente');
+                document.getElementById('test-results').innerHTML += '<p>✅ AdminLoginFix: OK</p>';
+            } else {
+                console.error('❌ AdminLoginFix no se cargó');
+                document.getElementById('test-results').innerHTML += '<p>❌ AdminLoginFix: FALLO</p>';
+            }
+        }, 200);
+    </script>
+    
+    <!-- Test scripts.js -->
+    <script src="scripts.js"></script>
+    <script>
+        setTimeout(() => {
+            console.log('✅ scripts.js cargado');
+            document.getElementById('test-results').innerHTML += '<p>✅ scripts.js: OK</p>';
+        }, 300);
+    </script>
+    
+    <!-- Test dashboard.js -->
+    <script src="js/dashboard.js"></script>
+    <script>
+        setTimeout(() => {
+            if (typeof Dashboard !== 'undefined') {
+                console.log('✅ Dashboard cargado correctamente');
+                document.getElementById('test-results').innerHTML += '<p>✅ Dashboard: OK</p>';
+            } else {
+                console.error('❌ Dashboard no se cargó');
+                document.getElementById('test-results').innerHTML += '<p>❌ Dashboard: FALLO</p>';
+            }
+        }, 400);
+    </script>
+</body>
+</html>

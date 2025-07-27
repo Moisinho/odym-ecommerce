@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Logout</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        button { padding: 10px 20px; margin: 10px; background: #d97706; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #b45309; }
+        .info { background: #f0f9ff; padding: 15px; border-radius: 5px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Test de Logout - ODYM Admin</h1>
+    
+    <div class="info">
+        <p><strong>Ubicación actual:</strong> <span id="current-location"></span></p>
+        <p><strong>Usuario en localStorage:</strong> <span id="user-status"></span></p>
+    </div>
+    
+    <button onclick="testLogout()">🚪 Test Logout</button>
+    <button onclick="testRedirect()">🔗 Test Redirect Manual</button>
+    <button onclick="clearStorage()">🗑️ Limpiar Storage</button>
+    
+    <div id="results"></div>
+    
+    <script src="js/admin-common.js"></script>
+    <script>
+        // Update current info
+        document.getElementById('current-location').textContent = window.location.href;
+        
+        const user = localStorage.getItem('user');
+        document.getElementById('user-status').textContent = user ? 'Usuario encontrado' : 'No hay usuario';
+        
+        function testLogout() {
+            console.log('🧪 Testing logout function...');
+            if (typeof adminLogout === 'function') {
+                adminLogout();
+            } else {
+                alert('❌ adminLogout function not found');
+            }
+        }
+        
+        function testRedirect() {
+            console.log('🧪 Testing manual redirect...');
+            window.location.href = '/odym-frontend/auth/login.html';
+        }
+        
+        function clearStorage() {
+            localStorage.clear();
+            sessionStorage.clear();
+            alert('✅ Storage cleared');
+            location.reload();
+        }
+        
+        // Log current state
+        console.log('Current location:', window.location.href);
+        console.log('User in storage:', localStorage.getItem('user'));
+        console.log('AuthService available:', typeof AuthService);
+        console.log('adminLogout available:', typeof adminLogout);
+    </script>
+</body>
+</html>

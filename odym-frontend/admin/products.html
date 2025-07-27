@@ -6,16 +6,105 @@
     <title>ODYM Admin - Productos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="flex h-screen bg-gray-100">
-        <!-- Sidebar Placeholder -->
-        <div id="sidebar-container"></div>
+    <!-- Loading state -->
+    <div id="admin-loading" class="fixed inset-0 bg-gray-100 flex items-center justify-center z-50">
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
+            <p class="text-gray-600">Verificando autenticación...</p>
+        </div>
+    </div>
+
+    <div id="admin-dashboard" class="flex h-screen bg-gray-100" style="display: none;">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="bg-white shadow-md w-64 fixed h-full z-30 overflow-y-auto">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center">
+                    <span class="text-2xl font-extrabold text-gray-800">OD<span class="text-orange-600">YM</span></span>
+                    <span class="ml-2 text-sm font-medium text-gray-600">Admin</span>
+                </div>
+            </div>
+            
+            <nav class="mt-6">
+                <!-- Menú de navegación -->
+                <div class="px-4 mb-2">
+                    <p class="text-xs uppercase tracking-wider text-gray-500">General</p>
+                </div>
+                <a href="index.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-tachometer-alt mr-3"></i>
+                    <span>Dashboard</span>
+                </a>
+                <div class="px-4 mt-6 mb-2">
+                    <p class="text-xs uppercase tracking-wider text-gray-500">Gestión</p>
+                </div>
+                <a href="products.html" class="sidebar-link flex items-center px-6 py-3 active">
+                    <i class="fas fa-box mr-3"></i>
+                    <span>Productos</span>
+                </a>
+                <a href="categories.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-tags mr-3"></i>
+                    <span>Categorías</span>
+                </a>
+                <a href="orders.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-shopping-cart mr-3"></i>
+                    <span>Pedidos</span>
+                </a>
+                <a href="bills.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-file-invoice mr-3"></i>
+                    <span>Facturas</span>
+                </a>
+                <a href="clients.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-users mr-3"></i>
+                    <span>Clientes</span>
+                </a>
+                <a href="admins.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-user-shield mr-3"></i>
+                    <span>Administradores</span>
+                </a>
+                <a href="distributors.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-motorcycle mr-3"></i>
+                    <span>Repartidores</span>
+                </a>
+                <a href="subscriptions.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-crown mr-3"></i>
+                    <span>Suscripciones</span>
+                </a>
+                <div class="px-4 mt-6 mb-2">
+                    <p class="text-xs uppercase tracking-wider text-gray-500">Configuración</p>
+                </div>
+                <a href="settings.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-cog mr-3"></i>
+                    <span>Ajustes</span>
+                </a>
+                <a href="#" onclick="adminLogout()" class="sidebar-link flex items-center px-6 py-3 text-red-600 hover:bg-red-100">
+                    <i class="fas fa-sign-out-alt mr-3"></i>
+                    <span>Cerrar sesión</span>
+                </a>
+            </nav>
+        </aside>
 
         <!-- Contenido principal -->
         <div class="flex-1 ml-64">
-            <!-- Header Placeholder -->
-            <div id="header-container"></div>
+            <!-- Header -->
+            <header class="bg-white shadow-sm py-4 px-6 flex justify-between items-center">
+                <div class="flex items-center">
+                    <button id="sidebarToggle" class="mr-4 text-gray-600 hover:text-gray-800 md:hidden">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 class="text-xl font-semibold text-gray-800">Productos</h1>
+                </div>
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-orange-600 rounded-full flex items-center justify-center text-white mr-2">
+                        A
+                    </div>
+                    <div>
+                        <p class="font-medium text-sm" id="admin-name">Admin User</p>
+                        <p class="text-xs text-gray-500">Administrador</p>
+                    </div>
+                </div>
+            </header>
 
             <!-- Contenido de Productos -->
             <main class="p-6">
@@ -125,10 +214,38 @@
         </div>
     </div>
 
-    <script src="./js/main.js"></script>
-    <script src="./js/api.js"></script>
-    <script src="./js/utils.js"></script>
-    <script src="./js/products.js"></script>
+    </div>
+
+    <!-- Admin common scripts -->
+    <script src="js/admin-common.js"></script>
+    <script src="js/products.js"></script>
+    <script>
+        // Products page specific functionality
+        let productsInitialized = false;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            // Wait for admin common to initialize, then show products page
+            setTimeout(() => {
+                const user = AuthService.getUser();
+                if (user && AuthService.isAdmin(user)) {
+                    // Hide loading and show dashboard
+                    document.getElementById('admin-loading').style.display = 'none';
+                    document.getElementById('admin-dashboard').style.display = 'flex';
+                    
+                    // Initialize products functionality only once
+                    if (window.ProductsApp && !productsInitialized) {
+                        productsInitialized = true;
+                        window.ProductsApp.init();
+                        console.log('✅ Página de productos inicializada');
+                    } else if (productsInitialized) {
+                        console.log('⚠️ ProductsApp ya está inicializado');
+                    } else {
+                        console.error('❌ ProductsApp no está disponible');
+                    }
+                }
+            }, 100);
+        });
+    </script>
 
 </body>
 </html>

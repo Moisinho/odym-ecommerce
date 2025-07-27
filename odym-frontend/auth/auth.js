@@ -231,6 +231,8 @@
 
 registerUser: async (formData) => {
   try {
+    console.log('📝 Registrando usuario...');
+    
     // Enviar la contraseña en texto plano, sin hashear
     const dataToSend = {
       ...formData,
@@ -245,22 +247,56 @@ registerUser: async (formData) => {
       body: JSON.stringify(dataToSend)
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Error en el registro');
+    let errorData;
+    try {
+      errorData = await response.json();
+    } catch (parseError) {
+      throw new Error('Error de conexión con el servidor');
     }
 
-    const data = await response.json();
+    if (!response.ok) {
+      console.error('❌ Error del servidor:', errorData);
+      throw new Error(errorData.error || errorData.message || 'Error en el registro');
+    }
+
+    console.log('✅ Usuario registrado exitosamente');
     // Guardar datos del usuario y redirigir
-    AuthService.setUser(data.customer);
+    AuthService.setUser(errorData.customer);
     window.location.href = 'http://localhost:5500/odym-frontend/';
+    
   } catch (error) {
-    console.error('Error al registrar usuario:', error);
-    if (error.message.includes('duplicate') || error.message.includes('ya existe')) {
-      methods.showError(htmlElements.usernameError, 'El usuario o correo ya existe. Por favor, intente con otros datos.');
+    console.error('❌ Error al registrar usuario:', error);
+    
+    const errorMessage = error.message.toLowerCase();
+    
+    // Manejo específico de errores de duplicados
+    if (errorMessage.includes('duplicate') || 
+        errorMessage.includes('ya existe') || 
+        errorMessage.includes('already exists') ||
+        errorMessage.includes('username') ||
+        errorMessage.includes('email')) {
+      
+      // Determinar si es error de username o email
+      if (errorMessage.includes('username') || errorMessage.includes('usuario')) {
+        methods.showError(htmlElements.usernameError, 'Este nombre de usuario ya está en uso. Por favor, elige otro.');
+      } else if (errorMessage.includes('email') || errorMessage.includes('correo')) {
+        methods.showError(htmlElements.emailError, 'Este correo electrónico ya está registrado. Por favor, usa otro.');
+      } else {
+        // Error genérico de duplicado
+        methods.showError(htmlElements.usernameError, 'El usuario o correo ya existe. Por favor, intenta con otros datos.');
+        methods.showError(htmlElements.emailError, 'Verifica que el correo no esté ya registrado.');
+      }
+      
+      // Volver al paso 1 para que puedan corregir
       methods.showStep1();
+      
+    } else if (errorMessage.includes('connection') || errorMessage.includes('fetch')) {
+      // Error de conexión
+      methods.showError(htmlElements.passwordError, 'Error de conexión. Verifica que el servidor esté funcionando.');
+      
     } else {
-      methods.showError(htmlElements.passwordError, 'Hubo un error al registrar el usuario. Por favor, intente nuevamente.');
+      // Otros errores
+      methods.showError(htmlElements.passwordError, error.message || 'Hubo un error al registrar el usuario. Por favor, intenta nuevamente.');
     }
   }
 },

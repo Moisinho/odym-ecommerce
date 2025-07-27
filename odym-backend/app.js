@@ -14,6 +14,13 @@ import orderRoutes from './routes/api/order.routes.js';
 import productsByIdsRoutes from './routes/api/products-by-ids.js';
 import analyticsRoutes from './routes/api/analytics.routes.js';
 
+// New CRUD routes
+import adminRoutes from './routes/api/admin.routes.js';
+import billRoutes from './routes/api/bill.routes.js';
+import distributorRoutes from './routes/api/distributor.routes.js';
+import subscriptionRoutes from './routes/api/subscription.routes.js';
+import { initializeDefaultSubscriptions } from './services/subscription.service.js';
+
 import cors from '@fastify/cors';
 
 // Import models for database decoration
@@ -22,11 +29,15 @@ import Product from './models/Product.js';
 import Order from './models/Order.js';
 import Payment from './models/Payment.js';
 import Category from './models/Category.js';
+import Admin from './models/Admin.js';
+import Bill from './models/Bill.js';
+import Distributor from './models/Distributor.js';
+import Subscription from './models/Subscription.js';
 
 config(); // Load environment variables from .env file
 
 const PORT = process.env.PORT || 3000;
-const MONGO_URI = 'mongodb://root:example@localhost:27017/';
+const MONGO_URI = process.env.MONGODB_URI || 'mongodb://root:example@localhost:27017/odym?authSource=admin';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -85,7 +96,11 @@ app.decorate('db', {
   Product,
   Order,
   Payment,
-  Category
+  Category,
+  Admin,
+  Bill,
+  Distributor,
+  Subscription
 });
 
 // Register API routes
@@ -98,6 +113,12 @@ app.register(checkoutRoutes, { prefix: '/api/checkout' });
 app.register(paymentRoutes, { prefix: '/api/payment' });
 app.register(productsByIdsRoutes, { prefix: '/api/products-by-ids' });
 app.register(analyticsRoutes, { prefix: '/api/analytics' });
+
+// Register new CRUD routes
+app.register(adminRoutes, { prefix: '/api/admins' });
+app.register(billRoutes, { prefix: '/api/bills' });
+app.register(distributorRoutes, { prefix: '/api/distributors' });
+app.register(subscriptionRoutes, { prefix: '/api/subscriptions' });
 
 // Serve static files (frontend assets)
 app.register(import('@fastify/static'), {
@@ -115,6 +136,10 @@ app.setNotFoundHandler((request, reply) => {
 const start = async () => {
     try {
         await connect(MONGO_URI);
+        
+        // Inicializar suscripciones por defecto
+        await initializeDefaultSubscriptions();
+        
         await app.listen({ port: PORT });
         app.log.info(`Server is running on port ${PORT}`);
     } catch (err) {

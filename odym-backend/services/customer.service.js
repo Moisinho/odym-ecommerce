@@ -113,16 +113,74 @@ export async function registerCustomer(request, reply) {
 }
 
 export async function updateCustomer(request, reply) {
-  const { id } = request.params;
-  const { fullName, username, email, password, subscription, phone, address, role } = request.body;
+  try {
+    const { id } = request.params;
+    const { fullName, username, email, password, subscription, phone, address, role } = request.body;
 
-  const customer = await Customer.findByIdAndUpdate(
-    id, 
-    { fullName, username, email, password, subscription, phone, address, role }, 
-    { new: true }
-  );
+    // Verificar duplicados antes de actualizar (excluyendo el usuario actual)
+    if (username) {
+      const existingUsername = await Customer.findOne({ username, _id: { $ne: id } });
+      if (existingUsername) {
+        return reply.status(400).send({ error: 'El nombre de usuario ya está en uso' });
+      }
+    }
 
-  return reply.status(200).send({ mensaje: 'Cliente actualizado exitosamente', customer });
+    if (email) {
+      const existingEmail = await Customer.findOne({ email, _id: { $ne: id } });
+      if (existingEmail) {
+        return reply.status(400).send({ error: 'El correo electrónico ya está registrado' });
+      }
+    }
+
+    // Preparar datos de actualización
+    const updateData = {
+      fullName,
+      username,
+      email,
+      subscription: subscription || 'ODYM User',
+      phone,
+      address,
+      role: role || 'user'
+    };
+
+    // Solo hashear y actualizar contraseña si se proporciona una nueva
+    if (password && password.trim() !== '') {
+      updateData.password = hashPassword(password);
+    }
+
+    const customer = await Customer.findByIdAndUpdate(
+      id, 
+      updateData, 
+      { new: true }
+    );
+
+    if (!customer) {
+      return reply.status(404).send({ error: 'Cliente no encontrado' });
+    }
+
+    return reply.status(200).send({ 
+      mensaje: 'Cliente actualizado exitosamente', 
+      customer: {
+        id: customer._id.toString(),
+        fullName: customer.fullName,
+        username: customer.username,
+        email: customer.email,
+        subscription: customer.subscription,
+        phone: customer.phone,
+        address: customer.address,
+        role: customer.role
+      }
+    });
+  } catch (error) {
+    console.error('Error updating customer:', error);
+    if (error.code === 11000) {
+      return reply.status(400).send({ error: 'El usuario o correo ya existe' });
+    }
+    return reply.status(500).send({ 
+      error: 'Error interno del servidor al actualizar usuario',
+      details: error.message
+    });
+  }
 }
 
 export async function deleteCustomer(request, reply) {

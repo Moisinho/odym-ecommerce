@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test de Conexión</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>Test de Conexión y Archivos</h1>
+    <div id="results"></div>
+    
+    <script>
+        const results = document.getElementById('results');
+        
+        function addResult(message, type = 'info') {
+            const p = document.createElement('p');
+            p.className = type;
+            p.textContent = message;
+            results.appendChild(p);
+        }
+        
+        // Test 1: Verificar ubicación actual
+        addResult(`Ubicación actual: ${window.location.href}`, 'info');
+        
+        // Test 2: Verificar si podemos cargar archivos
+        const testFiles = [
+            '../assets/js/auth-service.js',
+            '../js/admin-login-fix.js',
+            'scripts.js',
+            'js/dashboard.js',
+            'styles.css'
+        ];
+        
+        testFiles.forEach(file => {
+            fetch(file)
+                .then(response => {
+                    if (response.ok) {
+                        addResult(`✅ ${file} - Accesible`, 'success');
+                    } else {
+                        addResult(`❌ ${file} - Error ${response.status}`, 'error');
+                    }
+                })
+                .catch(error => {
+                    addResult(`❌ ${file} - Error de red: ${error.message}`, 'error');
+                });
+        });
+        
+        // Test 3: Verificar conexión con backend
+        fetch('http://localhost:3000/api/customers')
+            .then(response => {
+                if (response.ok) {
+                    addResult('✅ Backend conectado correctamente', 'success');
+                } else {
+                    addResult(`❌ Backend error: ${response.status}`, 'error');
+                }
+            })
+            .catch(error => {
+                addResult(`❌ Backend no disponible: ${error.message}`, 'error');
+            });
+    </script>
+</body>
+</html>

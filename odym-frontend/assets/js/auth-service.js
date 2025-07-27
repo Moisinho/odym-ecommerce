@@ -62,7 +62,7 @@
           if (loginInProgress) {
             return true;
           }
-          
+
           // Add small delay for admin pages to prevent race conditions
           if (!methods.isAuthenticated()) {
             setTimeout(() => {
@@ -257,7 +257,7 @@
 
         function renderUserMenu() {
           const user = methods.getUser();
-        
+
           if (user) {
             // Mostrar carrito y botón de usuario
             if (cartBtn) cartBtn.style.display = "";
@@ -267,16 +267,14 @@
             if (userMenu) {
               userMenu.innerHTML = `
                 <div class="px-4 py-2 border-b">
-                  <div class="font-bold text-gray-800">${
-                    user.fullName || user.username || "Usuario"
-                  }</div>
-                  <div class="text-xs text-gray-500">${
-                    user.email || "Sin email"
-                  }</div>
+                  <div class="font-bold text-gray-800">${user.fullName || user.username || "Usuario"
+                }</div>
+                  <div class="text-xs text-gray-500">${user.email || "Sin email"
+                }</div>
                 </div>
                 <button id="logoutBtn" class="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100">Cerrar sesión</button>
               `;
-              
+
             } else {
               console.error("❌ No se encontró el elemento userMenu");
             }
@@ -301,7 +299,7 @@
                   "login-button bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded transition duration-300";
                 loginBtn.textContent = "Iniciar Sesión";
                 loginBtn.onclick = () =>
-                  (window.location.href = "/odym-frontend/auth/login.html");
+                  (window.location.href = `${BASE_URL}/auth/login.html`);
 
                 if (userContainer) {
                   userContainer.appendChild(loginBtn);
@@ -347,7 +345,7 @@
           // Render inmediatamente al cargar
           setTimeout(renderUserMenu, 100);
         } else {
-          
+
 
           // Reintentar después de un delay
           setTimeout(() => {

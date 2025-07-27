@@ -20,7 +20,7 @@
 
     <div id="admin-dashboard" class="flex h-screen bg-gray-100" style="display: none;">
         <!-- Sidebar -->
-        <aside id="sidebar" class="bg-white shadow-md w-64 fixed h-full z-30">
+        <aside id="sidebar" class="bg-white shadow-md w-64 fixed h-full z-30 overflow-y-auto">
             <div class="p-6 border-b border-gray-200">
                 <div class="flex items-center">
                     <span class="text-2xl font-extrabold text-gray-800">OD<span class="text-orange-600">YM</span></span>
@@ -52,9 +52,25 @@
                     <i class="fas fa-shopping-cart mr-3"></i>
                     <span>Pedidos</span>
                 </a>
-                <a href="users.html" class="sidebar-link flex items-center px-6 py-3">
+                <a href="bills.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-file-invoice mr-3"></i>
+                    <span>Facturas</span>
+                </a>
+                <a href="clients.html" class="sidebar-link flex items-center px-6 py-3">
                     <i class="fas fa-users mr-3"></i>
-                    <span>Usuarios</span>
+                    <span>Clientes</span>
+                </a>
+                <a href="admins.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-user-shield mr-3"></i>
+                    <span>Administradores</span>
+                </a>
+                <a href="distributors.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-motorcycle mr-3"></i>
+                    <span>Repartidores</span>
+                </a>
+                <a href="subscriptions.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-crown mr-3"></i>
+                    <span>Suscripciones</span>
                 </a>
                 <div class="px-4 mt-6 mb-2">
                     <p class="text-xs uppercase tracking-wider text-gray-500">Configuración</p>
@@ -63,7 +79,7 @@
                     <i class="fas fa-cog mr-3"></i>
                     <span>Ajustes</span>
                 </a>
-                <a href="#" onclick="logout()" class="sidebar-link flex items-center px-6 py-3 text-red-600 hover:bg-red-100">
+                <a href="#" onclick="adminLogout()" class="sidebar-link flex items-center px-6 py-3 text-red-600 hover:bg-red-100">
                     <i class="fas fa-sign-out-alt mr-3"></i>
                     <span>Cerrar sesión</span>
                 </a>
@@ -92,7 +108,7 @@
                             A
                         </div>
                         <div>
-                            <p class="font-medium text-sm">Admin User</p>
+                            <p class="font-medium text-sm" id="admin-name">Admin User</p>
                             <p class="text-xs text-gray-500">Administrador</p>
                         </div>
                     </div>
@@ -109,7 +125,7 @@
                             <div class="flex justify-between items-start">
                                 <div>
                                     <p class="text-gray-500 text-sm">Ventas totales</p>
-                                    <h3 class="text-2xl font-bold mt-1" data-stat="total-sales">$0.00</h3>
+                                    <h3 class="text-2xl font-bold mt-1" id="total-sales">$0.00</h3>
                                     <p class="text-green-500 text-sm mt-2" data-stat="sales-growth">
                                         <i class="fas fa-arrow-up mr-1"></i> 0% desde el mes pasado
                                     </p>
@@ -125,7 +141,7 @@
                             <div class="flex justify-between items-start">
                                 <div>
                                     <p class="text-gray-500 text-sm">Total pedidos</p>
-                                    <h3 class="text-2xl font-bold mt-1" data-stat="total-orders">0</h3>
+                                    <h3 class="text-2xl font-bold mt-1" id="total-orders">0</h3>
                                     <p class="text-blue-500 text-sm mt-2">
                                         <i class="fas fa-shopping-cart mr-1"></i> Órdenes registradas
                                     </p>
@@ -137,11 +153,11 @@
                         </div>
                         
                         <!-- Tarjeta de clientes -->
-                        <div class="card bg-white rounded-lg shadow-sm p-6">
+                        <div class="card bg-white rounded-lg shadow-sm p-6" id="total-customers-container">
                             <div class="flex justify-between items-start">
                                 <div>
                                     <p class="text-gray-500 text-sm">Total clientes</p>
-                                    <h3 class="text-2xl font-bold mt-1" data-stat="total-customers">0</h3>
+                                    <h3 class="text-2xl font-bold mt-1" id="total-customers">0</h3>
                                     <p class="text-purple-500 text-sm mt-2">
                                         <i class="fas fa-users mr-1"></i> Usuarios registrados
                                     </p>
@@ -153,11 +169,11 @@
                         </div>
                         
                         <!-- Tarjeta de productos -->
-                        <div class="card bg-white rounded-lg shadow-sm p-6">
+                        <div class="card bg-white rounded-lg shadow-sm p-6" id="total-products-container">
                             <div class="flex justify-between items-start">
                                 <div>
                                     <p class="text-gray-500 text-sm">Total productos</p>
-                                    <h3 class="text-2xl font-bold mt-1" data-stat="total-products">0</h3>
+                                    <h3 class="text-2xl font-bold mt-1" id="total-products">0</h3>
                                     <p class="text-green-500 text-sm mt-2">
                                         <i class="fas fa-box mr-1"></i> En catálogo
                                     </p>
@@ -260,10 +276,54 @@
     <!-- Incluir modales -->
     <div id="modals-container"></div>
     
-    <!-- Load AuthService first, then admin scripts -->
-    <script src="../assets/js/auth-service.js"></script>
-    <script src="../js/admin-login-fix.js"></script>
-    <script src="scripts.js"></script>
-    <script src="js/dashboard.js"></script>
+    <!-- Admin common scripts -->
+    <script src="js/admin-common.js"></script>
+    <script>
+        // Dashboard specific functionality
+        async function loadDashboardStats() {
+            try {
+                console.log('📊 Cargando estadísticas del dashboard...');
+                
+                // Load customers count
+                showLoading('total-customers-container', 'Cargando...');
+                const customersData = await API.get('/customers');
+                document.getElementById('total-customers').textContent = customersData.customers?.length || 0;
+                
+                // Load products count
+                showLoading('total-products-container', 'Cargando...');
+                const productsData = await API.get('/products');
+                document.getElementById('total-products').textContent = productsData.products?.length || 0;
+                
+                // Load orders count (if endpoint exists)
+                try {
+                    const ordersData = await API.get('/orders');
+                    document.getElementById('total-orders').textContent = ordersData.orders?.length || 0;
+                } catch (error) {
+                    console.log('Orders endpoint not available');
+                }
+                
+                console.log('✅ Estadísticas cargadas correctamente');
+            } catch (error) {
+                console.error('Error loading dashboard stats:', error);
+                showError('dashboard-stats', 'Error al cargar estadísticas');
+            }
+        }
+        
+        // Initialize dashboard after common admin initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            // Wait for admin common to initialize, then load dashboard
+            setTimeout(() => {
+                const user = AuthService.getUser();
+                if (user && AuthService.isAdmin(user)) {
+                    // Hide loading and show dashboard
+                    document.getElementById('admin-loading').style.display = 'none';
+                    document.getElementById('admin-dashboard').style.display = 'flex';
+                    
+                    // Load dashboard stats
+                    loadDashboardStats();
+                }
+            }, 100);
+        });
+    </script>
 </body>
 </html>

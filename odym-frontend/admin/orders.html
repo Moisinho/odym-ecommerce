@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
     <!-- Loading state -->
     <div id="admin-loading" class="fixed inset-0 bg-gray-100 flex items-center justify-center z-50">
@@ -19,15 +21,16 @@
 
     <div id="admin-dashboard" class="flex h-screen bg-gray-100" style="display: none;">
         <!-- Sidebar -->
-        <aside id="sidebar" class="bg-white shadow-md w-64 fixed h-full z-30">
+        <aside id="sidebar" class="bg-white shadow-md w-64 fixed h-full z-30 overflow-y-auto">
             <div class="p-6 border-b border-gray-200">
                 <div class="flex items-center">
                     <span class="text-2xl font-extrabold text-gray-800">OD<span class="text-orange-600">YM</span></span>
                     <span class="ml-2 text-sm font-medium text-gray-600">Admin</span>
                 </div>
             </div>
-            
+
             <nav class="mt-6">
+                <!-- Menú de navegación -->
                 <div class="px-4 mb-2">
                     <p class="text-xs uppercase tracking-wider text-gray-500">General</p>
                 </div>
@@ -50,9 +53,25 @@
                     <i class="fas fa-shopping-cart mr-3"></i>
                     <span>Pedidos</span>
                 </a>
-                <a href="users.html" class="sidebar-link flex items-center px-6 py-3">
+                <a href="bills.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-file-invoice mr-3"></i>
+                    <span>Facturas</span>
+                </a>
+                <a href="clients.html" class="sidebar-link flex items-center px-6 py-3">
                     <i class="fas fa-users mr-3"></i>
-                    <span>Usuarios</span>
+                    <span>Clientes</span>
+                </a>
+                <a href="admins.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-user-shield mr-3"></i>
+                    <span>Administradores</span>
+                </a>
+                <a href="distributors.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-motorcycle mr-3"></i>
+                    <span>Repartidores</span>
+                </a>
+                <a href="subscriptions.html" class="sidebar-link flex items-center px-6 py-3">
+                    <i class="fas fa-crown mr-3"></i>
+                    <span>Suscripciones</span>
                 </a>
                 <div class="px-4 mt-6 mb-2">
                     <p class="text-xs uppercase tracking-wider text-gray-500">Configuración</p>
@@ -61,7 +80,8 @@
                     <i class="fas fa-cog mr-3"></i>
                     <span>Ajustes</span>
                 </a>
-                <a href="#" onclick="logout()" class="sidebar-link flex items-center px-6 py-3 text-red-600 hover:bg-red-100">
+                <a href="#" onclick="adminLogout()"
+                    class="sidebar-link flex items-center px-6 py-3 text-red-600 hover:bg-red-100">
                     <i class="fas fa-sign-out-alt mr-3"></i>
                     <span>Cerrar sesión</span>
                 </a>
@@ -82,11 +102,13 @@
                     <div class="relative mr-4">
                         <button class="text-gray-600 hover:text-gray-800 relative">
                             <i class="fas fa-bell text-xl"></i>
-                            <span class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">3</span>
+                            <span
+                                class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">3</span>
                         </button>
                     </div>
                     <div class="flex items-center">
-                        <div class="w-10 h-10 bg-orange-600 rounded-full flex items-center justify-center text-white mr-2">
+                        <div
+                            class="w-10 h-10 bg-orange-600 rounded-full flex items-center justify-center text-white mr-2">
                             A
                         </div>
                         <div>
@@ -125,9 +147,10 @@
                             </div>
                         </div>
                         <div class="flex gap-2">
-                            <input type="text" id="searchInput" placeholder="Buscar por ID o cliente..." 
-                                   class="border border-gray-300 rounded-md px-3 py-2 text-sm">
-                            <button onclick="searchOrders()" class="bg-orange-600 text-white px-4 py-2 rounded-md text-sm hover:bg-orange-700">
+                            <input type="text" id="searchInput" placeholder="Buscar por ID o cliente..."
+                                class="border border-gray-300 rounded-md px-3 py-2 text-sm">
+                            <button onclick="searchOrders()"
+                                class="bg-orange-600 text-white px-4 py-2 rounded-md text-sm hover:bg-orange-700">
                                 <i class="fas fa-search"></i>
                             </button>
                         </div>
@@ -140,25 +163,32 @@
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Pedido
                                     </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Cliente
                                     </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Productos
                                     </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Total
                                     </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Estado
                                     </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Fecha
                                     </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Acciones
                                     </th>
                                 </tr>
@@ -168,32 +198,38 @@
                             </tbody>
                         </table>
                     </div>
-                    
+
                     <!-- Paginación -->
                     <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
                         <div class="flex-1 flex justify-between sm:hidden">
-                            <button id="prevPageMobile" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                            <button id="prevPageMobile"
+                                class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                                 Anterior
                             </button>
-                            <button id="nextPageMobile" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                            <button id="nextPageMobile"
+                                class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                                 Siguiente
                             </button>
                         </div>
                         <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                             <div>
                                 <p class="text-sm text-gray-700">
-                                    Mostrando <span id="showingFrom">0</span> a <span id="showingTo">0</span> de <span id="totalOrders">0</span> pedidos
+                                    Mostrando <span id="showingFrom">0</span> a <span id="showingTo">0</span> de <span
+                                        id="totalOrders">0</span> pedidos
                                 </p>
                             </div>
                             <div>
                                 <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                                    <button id="prevPage" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                    <button id="prevPage"
+                                        class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                                         <i class="fas fa-chevron-left"></i>
                                     </button>
-                                    <span id="paginationNumbers" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                                    <span id="paginationNumbers"
+                                        class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
                                         1
                                     </span>
-                                    <button id="nextPage" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                    <button id="nextPage"
+                                        class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                                         <i class="fas fa-chevron-right"></i>
                                     </button>
                                 </nav>
@@ -206,7 +242,8 @@
     </div>
 
     <!-- Modal de detalles del pedido -->
-    <div id="orderDetailsModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+    <div id="orderDetailsModal"
+        class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
         <div class="flex items-center justify-center min-h-screen p-4">
             <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                 <div class="p-6">
@@ -230,4 +267,5 @@
     <script src="scripts.js"></script>
     <script src="js/orders.js"></script>
 </body>
+
 </html>

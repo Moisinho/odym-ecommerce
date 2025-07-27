@@ -4,6 +4,7 @@ export default async function customerRoutes(fastify, options) {
   fastify.get('/', getCustomers);
   fastify.post('/login', loginCustomer); 
   fastify.post('/register', registerCustomer);
+  fastify.post('/', registerCustomer); // Agregar ruta POST para crear clientes desde admin
   fastify.put('/:id', updateCustomer);
   fastify.delete('/:id', deleteCustomer);
   fastify.get('/check-username/:username', checkUsername);
