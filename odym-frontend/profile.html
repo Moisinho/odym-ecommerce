@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Mi Cuenta - ODYM</title>
+    <title>Mi Perfil - ODYM</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="css/styles.css" />
     <link rel="stylesheet" href="/auth/auth.css" />
@@ -13,7 +13,7 @@
 
     <main class="container mx-auto px-4 py-8">
         <h1 class="text-3xl font-bold mb-6">Mi Perfil</h1>
-        <section class="bg-white p-6 rounded-lg shadow-md max-w-3xl mx-auto">
+        <section class="bg-white p-6 rounded-lg shadow-md max-w-2xl mx-auto">
             <div id="user-info" class="mb-6">
                 <!-- Información del usuario autenticado se cargará aquí -->
             </div>
@@ -27,7 +27,7 @@
 
     <!-- Scripts necesarios -->
     <script src="assets/js/auth-service.js"></script>
-    <script src="js/account.js"></script>
+    <script src="js/profile.js"></script>
     <script>
         // Cargar partials
         fetch('partials/header.html')
@@ -39,19 +39,7 @@
                     window.AuthService.initUserMenu();
                 }
             });
-        fetch('partials/footer.html')
-            .then(response => response.text())
-            .then(data => document.getElementById('footer').innerHTML = data);
-    </script>
 
-        fetch('partials/footer.html')
-            .then(response => response.text())
-            .then(data => document.getElementById('footer').innerHTML = data);
-    </script>
-=======
-</body>
-</html>
-=======
         fetch('partials/footer.html')
             .then(response => response.text())
             .then(data => document.getElementById('footer').innerHTML = data);

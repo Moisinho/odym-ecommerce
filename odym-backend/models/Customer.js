@@ -10,7 +10,7 @@ const customerSchema = new mongoose.Schema({
   address: { type: String, required: true},
   role: {
     type: String,
-    enum: ['user', 'admin'],
+    enum: ['user', 'admin', 'delivery'],
     default: 'user'
   }
 });

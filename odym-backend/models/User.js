@@ -19,9 +19,25 @@ const userSchema = new mongoose.Schema({
     required: true,
     minlength: 6
   },
+  phone: {
+    type: String,
+    trim: true
+  },
+  address: {
+    type: String,
+    trim: true
+  },
+  city: {
+    type: String,
+    trim: true
+  },
+  postalCode: {
+    type: String,
+    trim: true
+  },
   role: {
     type: String,
-    enum: ['user', 'admin'],
+    enum: ['user', 'admin', 'delivery'],
     default: 'user'
   },
   cart: [{

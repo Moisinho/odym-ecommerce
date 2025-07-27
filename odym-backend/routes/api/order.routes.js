@@ -1,7 +1,9 @@
 import {
+  cancelOrder,
   createOrder,
   createOrderFromItems,
   createPaymentIntent,
+  deleteOrder,
   getAllOrders,
   getOrderById,
   getUserOrders,
@@ -214,6 +216,27 @@ async function orderRoutes(fastify, options) {
         success: true, 
         order,
         message: 'Quick order created successfully' 
+      });
+    } catch (error) {
+      reply.status(400).send({ error: error.message });
+    }
+  });
+
+  // Cancel order (user)
+  fastify.patch('/:orderId/cancel', async (request, reply) => {
+    try {
+      const { orderId } = request.params;
+      const { userId } = request.body;
+      
+      if (!userId) {
+        return reply.status(400).send({ error: 'User ID is required' });
+      }
+      
+      const order = await cancelOrder(orderId, userId);
+      reply.send({
+        success: true,
+        order,
+        message: 'Order cancelled successfully'
       });
     } catch (error) {
       reply.status(400).send({ error: error.message });

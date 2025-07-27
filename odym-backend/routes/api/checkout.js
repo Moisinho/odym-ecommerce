@@ -221,9 +221,38 @@ async function handleCheckoutSessionCompleted(session, fastify) {
       };
     });
 
-    // Create order
-    const customerDetails = session.customer_details || {};
-    const address = customerDetails.address || {};
+    // Always use user data from database for shipping address
+    let shippingAddress = {
+      firstName: 'Cliente',
+      lastName: '',
+      email: session.customer_email || '',
+      phone: '',
+      address: '',
+      city: 'Ciudad de Panamá',
+      postalCode: '0000',
+      country: 'Panama'
+    };
+    
+    if (userId !== 'guest') {
+      try {
+        const user = await fastify.db.Customer.findById(userId);
+        
+        if (user) {
+          shippingAddress = {
+            firstName: user.fullName.split(' ')[0] || user.fullName,
+            lastName: user.fullName.split(' ').slice(1).join(' ') || '',
+            email: user.email,
+            phone: user.phone || 'No disponible',
+            address: user.address || 'Dirección no especificada',
+            city: 'Ciudad de Panamá',
+            postalCode: '0000',
+            country: 'Panama'
+          };
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    }
     
     const order = new fastify.db.Order({
       userId: userId === 'guest' ? null : userId,
@@ -232,16 +261,7 @@ async function handleCheckoutSessionCompleted(session, fastify) {
       status: 'processing',
       paymentStatus: 'paid',
       paymentIntentId: session.payment_intent,
-      shippingAddress: {
-        firstName: customerDetails.name?.split(' ')[0] || 'Cliente',
-        lastName: customerDetails.name?.split(' ').slice(1).join(' ') || '',
-        email: customerDetails.email || customerEmail,
-        phone: customerDetails.phone || '',
-        address: address.line1 || '',
-        city: address.city || '',
-        postalCode: address.postal_code || '',
-        country: address.country || ''
-      }
+      shippingAddress: shippingAddress
     });
 
     await order.save();

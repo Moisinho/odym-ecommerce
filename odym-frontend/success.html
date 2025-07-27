@@ -121,6 +121,19 @@
         function displayOrderDetails(order) {
             const orderDetails = document.getElementById('orderDetails');
             
+            // Get current user data
+            const currentUser = window.AuthService ? window.AuthService.getUser() : null;
+            
+            // Use current user data for shipping info, fallback to order data
+            const shippingInfo = {
+                name: currentUser ? currentUser.fullName : (order.shippingAddress?.firstName + ' ' + order.shippingAddress?.lastName || 'Cliente'),
+                email: currentUser ? currentUser.email : (order.shippingAddress?.email || 'No disponible'),
+                phone: currentUser ? currentUser.phone : (order.shippingAddress?.phone || 'No disponible'),
+                address: currentUser ? currentUser.address : (order.shippingAddress?.address || 'Dirección no especificada'),
+                city: order.shippingAddress?.city || 'Ciudad de Panamá',
+                postalCode: order.shippingAddress?.postalCode || '0000'
+            };
+            
             orderDetails.innerHTML = `
                 <h3 class="font-semibold mb-4 text-lg">Detalles del pedido:</h3>
                 
@@ -139,7 +152,7 @@
                     </div>
                     <div>
                         <p class="text-sm text-gray-600"><strong>Email:</strong></p>
-                        <p class="text-sm">${order.shippingAddress?.email || 'No disponible'}</p>
+                        <p class="text-sm">${shippingInfo.email}</p>
                     </div>
                 </div>
 
@@ -161,10 +174,12 @@
                 <div class="mt-6 pt-4 border-t">
                     <h4 class="font-semibold mb-2">Información de envío:</h4>
                     <div class="text-sm text-left">
-                        <p><strong>Nombre:</strong> ${order.shippingAddress?.firstName || ''} ${order.shippingAddress?.lastName || ''}</p>
-                        <p><strong>Dirección:</strong> ${order.shippingAddress?.address || ''}</p>
-                        <p><strong>Ciudad:</strong> ${order.shippingAddress?.city || ''}</p>
-                        <p><strong>Código postal:</strong> ${order.shippingAddress?.postalCode || ''}</p>
+                        
+                        <p><strong>Email:</strong> ${shippingInfo.email}</p>
+                        <p><strong>Teléfono:</strong> ${shippingInfo.phone}</p>
+                        <p><strong>Dirección:</strong> ${shippingInfo.address}</p>
+                        <p><strong>Ciudad:</strong> ${shippingInfo.city}</p>
+                        <p><strong>Código postal:</strong> ${shippingInfo.postalCode}</p>
                     </div>
                 </div>
             `;
