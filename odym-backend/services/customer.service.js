@@ -1,132 +1,116 @@
-import Customer from '../models/Customer.js';
-import crypto from 'crypto';
+import User from '../models/User.js';
 
-// Función para hashear contraseñas
-const hashPassword = (password) => {
-  // Usar el mismo salt que en el frontend
-  const hash = crypto.createHash('sha256');
-  hash.update(password + "ODYM_SALT_2024");
-  return hash.digest('hex');
+// Get all customers
+export const getCustomers = async (request, reply) => {
+  try {
+    const customers = await User.find().select('-password');
+    reply.send(customers);
+  } catch (error) {
+    reply.status(500).send({ error: 'Error fetching customers', details: error.message });
+  }
 };
 
-export async function getCustomers(request, reply) {
-  const customers = await Customer.find();
-  return reply.status(200).send({ customers });
-}
-
-export async function checkUsername(request, reply) {
-  const { username } = request.params;
-  const existingUser = await Customer.findOne({ username });
-  return reply.status(200).send({ exists: !!existingUser });
-}
-
-export async function checkEmail(request, reply) {
-  const { email } = request.params;
-  const existingUser = await Customer.findOne({ email });
-  return reply.status(200).send({ exists: !!existingUser });
-}
-
-export async function loginCustomer(request, reply) {
-  const { identifier, password } = request.body;
-
-  // Buscar por email o username
-  const customer = await Customer.findOne({
-    $or: [
-      { email: identifier },
-      { username: identifier }
-    ]
-  });
-
-  if (!customer) {
-    return reply.status(404).send({ error: 'Usuario no encontrado' });
-  }
-
-  // Hashear la contraseña proporcionada y comparar
-  const hashedPassword = hashPassword(password);
-  if (customer.password !== hashedPassword) {
-    return reply.status(401).send({ error: 'Contraseña incorrecta' });
-  }
-
-  return {
-    mensaje: 'Login exitoso',
-    customer: {
-      id: customer._id,
-      fullName: customer.fullName,
-      username: customer.username,
-      email: customer.email,
-      subscription: customer.subscription,
-      role: customer.role
-    }
-  };
-}
-
-export async function registerCustomer(request, reply) {
+// Login customer
+export const loginCustomer = async (request, reply) => {
   try {
-    const { fullName, username, email, password, subscription, phone, address, role } = request.body;
-
-    // Verificar duplicados antes de crear
-    const existingUsername = await Customer.findOne({ username });
-    if (existingUsername) {
-      return reply.status(400).send({ error: 'El nombre de usuario ya está en uso' });
-    }
-
-    const existingEmail = await Customer.findOne({ email });
-    if (existingEmail) {
-      return reply.status(400).send({ error: 'El correo electrónico ya está registrado' });
-    }
-
-    // Hashear la contraseña antes de guardar
-    const hashedPassword = hashPassword(password);
-
-    const customer = await Customer.create({ 
-      fullName, 
-      username, 
-      email, 
-      password: hashedPassword,
-      subscription: subscription || 'ODYM User',
-      phone, 
-      address,
-      role: role || 'user'
+    const { identifier, password } = request.body;
+    
+    // Find customer by email or name (User model uses 'name' instead of 'username')
+    const customer = await User.findOne({
+      $or: [{ email: identifier }, { name: identifier }]
     });
-
-    return reply.status(201).send({ 
-      mensaje: 'Cliente registrado exitosamente', 
-      customer: {
-        id: customer._id.toString(),
-        fullName: customer.fullName,
-        username: customer.username,
-        email: customer.email,
-        subscription: customer.subscription,
-        role: customer.role
-      } 
+    
+    if (!customer) {
+      return reply.status(401).send({ error: 'Credenciales inválidas' });
+    }
+    
+    // Check password using the User model's comparePassword method
+    const isPasswordValid = await customer.comparePassword(password);
+    if (!isPasswordValid) {
+      return reply.status(401).send({ error: "Credenciales inválidas" });
+    }
+    
+    // Remove password from response and ensure phone/address fields exist
+    const customerResponse = customer.toObject();
+    delete customerResponse.password;
+    
+    // Ensure phone and address fields exist (for backward compatibility)
+    if (!customerResponse.phone) {
+      customerResponse.phone = '';
+    }
+    if (!customerResponse.address) {
+      customerResponse.address = '';
+    }
+    
+    reply.send({ 
+      success: true, 
+      customer: customerResponse,
+      message: 'Login successful' 
     });
   } catch (error) {
-    console.error('Error completo:', error);
-    if (error.code === 11000) {
-      return reply.status(400).send({ error: 'El usuario o correo ya existe' });
-    }
-    return reply.status(500).send({ 
-      error: 'Error interno del servidor al registrar usuario',
-      details: error.message
-    });
+    reply.status(500).send({ error: 'Error during login', details: error.message });
   }
-}
+};
 
-export async function updateCustomer(request, reply) {
+// Register customer
+export const registerCustomer = async (request, reply) => {
+  try {
+    const { fullName, name, username, email, password, phone, address, role = 'user' } = request.body;
+    
+    // Use fullName as name if name is not provided (for compatibility)
+    const userName = name || fullName || username;
+    
+    // Check if customer already exists
+    const existingCustomer = await User.findOne({
+      $or: [{ email }, { name: userName }]
+    });
+    
+    if (existingCustomer) {
+      return reply.status(400).send({ error: 'Customer already exists' });
+    }
+    
+    // Create customer (User model handles password hashing automatically)
+    const customer = new User({
+      name: userName,
+      email,
+      password,
+      phone: phone || '',
+      address: address || '',
+      role
+    });
+    
+    await customer.save();
+    
+    // Remove password from response
+    const customerResponse = customer.toObject();
+    delete customerResponse.password;
+    
+    reply.status(201).send({ 
+      success: true, 
+      customer: customerResponse,
+      message: 'Customer registered successfully' 
+    });
+  } catch (error) {
+    reply.status(500).send({ error: 'Error registering customer', details: error.message });
+  }
+};
+
+// Update customer
+export const updateCustomer = async (request, reply) => {
   try {
     const { id } = request.params;
     const { fullName, username, email, password, subscription, phone, address, role } = request.body;
 
     // Verificar duplicados antes de actualizar (excluyendo el usuario actual)
     if (username) {
-      const existingUsername = await Customer.findOne({ username, _id: { $ne: id } });
+      const existingUsername = await User.findOne({ name: username, _id: { $ne: id } });
       if (existingUsername) {
         return reply.status(400).send({ error: 'El nombre de usuario ya está en uso' });
       }
     }
 
     if (email) {
-      const existingEmail = await Customer.findOne({ email, _id: { $ne: id } });
+      const existingEmail = await User.findOne({ email, _id: { $ne: id } });
       if (existingEmail) {
         return reply.status(400).send({ error: 'El correo electrónico ya está registrado' });
       }
@@ -134,8 +118,7 @@ export async function updateCustomer(request, reply) {
 
     // Preparar datos de actualización
     const updateData = {
-      fullName,
-      username,
+      name: fullName || username,
       email,
       subscription: subscription || 'ODYM User',
       phone,
@@ -145,14 +128,14 @@ export async function updateCustomer(request, reply) {
 
     // Solo hashear y actualizar contraseña si se proporciona una nueva
     if (password && password.trim() !== '') {
-      updateData.password = hashPassword(password);
+      updateData.password = password; // User model will hash automatically
     }
 
-    const customer = await Customer.findByIdAndUpdate(
+    const customer = await User.findByIdAndUpdate(
       id, 
       updateData, 
       { new: true }
-    );
+    ).select('-password');
 
     if (!customer) {
       return reply.status(404).send({ error: 'Cliente no encontrado' });
@@ -162,8 +145,8 @@ export async function updateCustomer(request, reply) {
       mensaje: 'Cliente actualizado exitosamente', 
       customer: {
         id: customer._id.toString(),
-        fullName: customer.fullName,
-        username: customer.username,
+        fullName: customer.name,
+        username: customer.name,
         email: customer.email,
         subscription: customer.subscription,
         phone: customer.phone,
@@ -181,37 +164,205 @@ export async function updateCustomer(request, reply) {
       details: error.message
     });
   }
-}
+};
 
-export async function deleteCustomer(request, reply) {
-  const { id } = request.params;
-  await Customer.findByIdAndDelete(id);
-  return reply.status(200).send({ mensaje: 'Cliente eliminado exitosamente' });
-}
-
-// Función para verificar si un usuario es admin
-export async function isAdmin(customerId) {
+// Delete customer
+export const deleteCustomer = async (request, reply) => {
   try {
-    const customer = await Customer.findById(customerId);
+    const { id } = request.params;
+    
+    const customer = await User.findByIdAndDelete(id);
+    
+    if (!customer) {
+      return reply.status(404).send({ error: 'Customer not found' });
+    }
+    
+    reply.send({ 
+      success: true, 
+      message: 'Customer deleted successfully' 
+    });
+  } catch (error) {
+    reply.status(500).send({ error: 'Error deleting customer', details: error.message });
+  }
+};
+
+// Check username availability (now checks 'name' field)
+export const checkUsername = async (request, reply) => {
+  try {
+    const { username } = request.params;
+    const customer = await User.findOne({ name: username });
+    reply.send({ available: !customer });
+  } catch (error) {
+    reply.status(500).send({ error: 'Error checking username', details: error.message });
+  }
+};
+
+// Check email availability
+export const checkEmail = async (request, reply) => {
+  try {
+    const { email } = request.params;
+    const customer = await User.findOne({ email });
+    reply.send({ available: !customer });
+  } catch (error) {
+    reply.status(500).send({ error: 'Error checking email', details: error.message });
+  }
+};
+
+// Check if user is admin
+export const isAdmin = async (customerId) => {
+  try {
+    const customer = await User.findById(customerId);
     return customer && customer.role === 'admin';
   } catch (error) {
-    console.error('Error checking admin status:', error);
     return false;
   }
-}
+};
 
-// Middleware para verificar autenticación de admin
-export async function verifyAdmin(request, reply) {
-  const { customerId } = request.body;
-  
-  if (!customerId) {
-    return reply.status(401).send({ error: 'ID de usuario requerido' });
+// Verify admin (middleware-like function)
+export const verifyAdmin = async (request, reply) => {
+  try {
+    const { id } = request.params;
+    const adminStatus = await isAdmin(id);
+    
+    if (!adminStatus) {
+      return reply.status(403).send({ error: 'Access denied. Admin privileges required.' });
+    }
+    
+    reply.send({ isAdmin: true });
+  } catch (error) {
+    reply.status(500).send({ error: 'Error verifying admin status', details: error.message });
   }
-  
-  const adminStatus = await isAdmin(customerId);
-  if (!adminStatus) {
-    return reply.status(403).send({ error: 'Acceso denegado. Se requieren permisos de administrador.' });
+};
+
+// Get customer by ID
+export const getCustomerById = async (customerId) => {
+  try {
+    const customer = await User.findById(customerId).select('-password');
+    if (!customer) {
+      throw new Error('Customer not found');
+    }
+    
+    // Ensure phone and address fields exist (for backward compatibility)
+    const customerObj = customer.toObject();
+    if (!customerObj.phone) {
+      customerObj.phone = '';
+    }
+    if (!customerObj.address) {
+      customerObj.address = '';
+    }
+    
+    return customerObj;
+  } catch (error) {
+    throw new Error('Error fetching customer: ' + error.message);
   }
-  
-  return true;
-}
+};
+
+// Update customer profile
+export const updateCustomerProfile = async (customerId, updateData) => {
+  try {
+    const allowedUpdates = ['name', 'email', 'phone', 'address'];
+    const updates = {};
+    
+    // Filter only allowed updates
+    Object.keys(updateData).forEach(key => {
+      if (allowedUpdates.includes(key) && updateData[key] !== undefined) {
+        updates[key] = updateData[key];
+      }
+    });
+    
+    if (Object.keys(updates).length === 0) {
+      throw new Error('No valid fields to update');
+    }
+    
+    // Check if email is being updated and if it's already taken
+    if (updates.email) {
+      const existingCustomer = await User.findOne({ 
+        email: updates.email, 
+        _id: { $ne: customerId } 
+      });
+      if (existingCustomer) {
+        throw new Error('Email already in use');
+      }
+    }
+    
+    const customer = await User.findByIdAndUpdate(
+      customerId,
+      updates,
+      { new: true, runValidators: true }
+    ).select('-password');
+    
+    if (!customer) {
+      throw new Error('Customer not found');
+    }
+    
+    return customer;
+  } catch (error) {
+    throw new Error('Error updating customer profile: ' + error.message);
+  }
+};
+
+// Change customer password
+export const changeCustomerPassword = async (customerId, currentPassword, newPassword) => {
+  try {
+    const customer = await User.findById(customerId);
+    if (!customer) {
+      throw new Error('Customer not found');
+    }
+    
+    // Verify current password using User model's comparePassword method
+    const isCurrentPasswordValid = await customer.comparePassword(currentPassword);
+    if (!isCurrentPasswordValid) {
+      throw new Error('Current password is incorrect');
+    }
+    
+    // Update password (User model will hash it automatically)
+    customer.password = newPassword;
+    await customer.save();
+    
+    return { message: 'Password updated successfully' };
+  } catch (error) {
+    throw new Error('Error changing password: ' + error.message);
+  }
+};
+
+// Get all customers (admin)
+export const getAllCustomers = async (page = 1, limit = 10) => {
+  try {
+    const skip = (page - 1) * limit;
+    
+    const customers = await User.find()
+      .select('-password')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    
+    const total = await User.countDocuments();
+    
+    return {
+      customers,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+        totalItems: total,
+        itemsPerPage: limit,
+        showingFrom: skip + 1,
+        showingTo: Math.min(skip + limit, total)
+      }
+    };
+  } catch (error) {
+    throw new Error('Error fetching customers: ' + error.message);
+  }
+};
+
+// Get delivery personnel
+export const getDeliveryPersonnel = async () => {
+  try {
+    const deliveryPersonnel = await User.find({ role: 'delivery' })
+      .select('-password')
+      .sort({ name: 1 });
+    
+    return deliveryPersonnel;
+  } catch (error) {
+    throw new Error('Error fetching delivery personnel: ' + error.message);
+  }
+};

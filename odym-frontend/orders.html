@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mis Pedidos - ODYM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="/auth/auth.css" />
+</head>
+<body>
+    <div id="header"></div>
+
+    <main class="container mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold">Mis Pedidos</h1>
+            <a href="profile.html" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition duration-300">
+                Volver al Perfil
+            </a>
+        </div>
+        
+        <!-- Filtros -->
+        <div class="bg-white p-4 rounded-lg shadow-md mb-6">
+            <div class="flex flex-wrap gap-4 items-center">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Filtrar por estado:</label>
+                    <select id="statusFilter" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="">Todos</option>
+                        <option value="pending">Pendiente</option>
+                        <option value="processing">Procesando</option>
+                        <option value="shipped">Enviado</option>
+                        <option value="delivered">Entregado</option>
+                        <option value="cancelled">Cancelado</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Ordenar por:</label>
+                    <select id="sortOrder" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="newest">Más recientes</option>
+                        <option value="oldest">Más antiguos</option>
+                        <option value="amount-high">Mayor monto</option>
+                        <option value="amount-low">Menor monto</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de pedidos -->
+        <div id="orders-container" class="space-y-4">
+            <div class="text-center py-8">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto mb-4"></div>
+                <p class="text-gray-500">Cargando pedidos...</p>
+            </div>
+        </div>
+
+        <!-- Paginación -->
+        <div id="pagination" class="mt-8 flex justify-center">
+            <!-- Se generará dinámicamente -->
+        </div>
+    </main>
+
+    <div id="footer"></div>
+
+    <!-- Scripts necesarios -->
+    <script src="assets/js/auth-service.js"></script>
+    <script src="js/orders.js"></script>
+    <script>
+        // Cargar partials
+        fetch('partials/header.html')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('header').innerHTML = data;
+                // Inicializar AuthService después de cargar el header
+                if (window.AuthService) {
+                    window.AuthService.initUserMenu();
+                }
+            });
+
+        fetch('partials/footer.html')
+            .then(response => response.text())
+            .then(data => document.getElementById('footer').innerHTML = data);
+    </script>
+</body>
+</html>

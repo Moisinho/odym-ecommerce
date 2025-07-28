@@ -106,3 +106,73 @@ export const deleteProduct = async (id) => {
 export const getProductsWithStock = async () => {
   return await Product.find({ stock: { $gt: 0 } }).populate('category');
 };
+
+// Get most purchased products
+export const getMostPurchasedProducts = async (limit = 4) => {
+  try {
+    const Order = (await import('../models/Order.js')).default;
+    
+    // Aggregate orders to find most purchased products
+    const mostPurchased = await Order.aggregate([
+      // Match only completed orders
+      { $match: { status: { $in: ['delivered', 'processing', 'shipped'] } } },
+      
+      // Unwind items array to work with individual products
+      { $unwind: '$items' },
+      
+      // Group by product ID and sum quantities
+      {
+        $group: {
+          _id: '$items.productId',
+          totalQuantity: { $sum: '$items.quantity' },
+          totalOrders: { $sum: 1 }
+        }
+      },
+      
+      // Sort by total quantity descending
+      { $sort: { totalQuantity: -1 } },
+      
+      // Limit to specified number
+      { $limit: limit }
+    ]);
+    
+    // Get product details for the most purchased products
+    const productIds = mostPurchased.map(item => item._id);
+    const products = await Product.find({ _id: { $in: productIds } })
+      .populate('category', 'name');
+    
+    // Sort products according to purchase frequency
+    const sortedProducts = mostPurchased.map(item => {
+      const product = products.find(p => p._id.toString() === item._id.toString());
+      if (product) {
+        return {
+          ...product.toObject(),
+          purchaseStats: {
+            totalQuantity: item.totalQuantity,
+            totalOrders: item.totalOrders
+          }
+        };
+      }
+      return null;
+    }).filter(Boolean);
+    
+    // If we don't have enough most purchased products, fill with random products
+    if (sortedProducts.length < limit) {
+      const remainingCount = limit - sortedProducts.length;
+      const usedIds = sortedProducts.map(p => p._id);
+      
+      const additionalProducts = await Product.find({ 
+        _id: { $nin: usedIds } 
+      })
+        .populate('category', 'name')
+        .limit(remainingCount)
+        .sort({ createdAt: -1 });
+      
+      sortedProducts.push(...additionalProducts);
+    }
+    
+    return sortedProducts;
+  } catch (error) {
+    throw new Error('Error fetching most purchased products: ' + error.message);
+  }
+};

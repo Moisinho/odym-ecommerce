@@ -6,7 +6,8 @@ import {
   updateProduct, 
   updateProductStock, 
   checkStockAvailability,
-  getProductsWithStock 
+  getProductsWithStock,
+  getMostPurchasedProducts
 } from '../../services/product.service.js';
 import { uploadImage } from '../../services/imgbb.service.js';
 
@@ -21,6 +22,18 @@ async function productRoutes(fastify, options) {
   fastify.get('/available', async (request, reply) => {
     const products = await getProductsWithStock();
     reply.send(products);
+  });
+
+  // Obtener productos más comprados
+  fastify.get('/most-purchased', async (request, reply) => {
+    try {
+      const { limit } = request.query;
+      const products = await getMostPurchasedProducts(limit ? parseInt(limit) : 4);
+      reply.send(products);
+    } catch (error) {
+      console.error('Error getting most purchased products:', error);
+      reply.status(500).send({ error: error.message });
+    }
   });
 
   // Obtener producto por ID (MOVIDO AQUÍ PARA EVITAR CONFLICTOS)

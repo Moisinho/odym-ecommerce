@@ -7,8 +7,8 @@ import stripe from './stripe.service.js';
 // Create order from cart
 export const createOrder = async (userId, shippingAddress) => {
   try {
-    const customer = await Customer.findById(userId);
-    if (!customer) throw new Error('Customer not found');
+    const user = await Customer.findById(userId);
+    if (!user) throw new Error('User not found');
     
     // Note: Customer model doesn't have cart, so this function needs to be used with createOrderFromItems
     throw new Error('Use createOrderFromItems for cart-based orders');
@@ -23,6 +23,22 @@ export const createOrderFromItems = async (userId, items, shippingAddress) => {
     if (!items || !Array.isArray(items) || items.length === 0) {
       throw new Error('Cart is empty');
     }
+
+    // Get user information
+    const user = await Customer.findById(userId);
+    if (!user) throw new Error('User not found');
+
+    // Always use user's address for shipping
+    shippingAddress = {
+      firstName: user.fullName.split(' ')[0] || user.fullName,
+      lastName: user.fullName.split(' ').slice(1).join(' ') || '',
+      email: user.email,
+      phone: user.phone || 'No disponible',
+      address: user.address || 'Dirección no especificada',
+      city: 'Ciudad de Panamá',
+      postalCode: '0000',
+      country: 'Panama'
+    };
 
     // Validate stock and calculate total
     let totalAmount = 0;
@@ -95,7 +111,30 @@ export const getUserOrders = async (userId) => {
       .populate('items.productId', 'name images')
       .sort({ createdAt: -1 });
     
-    return orders;
+    // Enrich orders with current user data from Customer model
+    const user = await Customer.findById(userId);
+    const enrichedOrders = orders.map(order => {
+      const orderObj = order.toObject();
+      
+      // Update shipping address with current user data if available
+      if (user) {
+        orderObj.shippingAddress = {
+          ...orderObj.shippingAddress,
+          firstName: user.fullName.split(' ')[0] || user.fullName,
+          lastName: user.fullName.split(' ').slice(1).join(' ') || '',
+          email: user.email,
+          phone: user.phone || 'No disponible',
+          address: user.address || 'Dirección no especificada',
+          city: orderObj.shippingAddress?.city || 'Ciudad de Panamá',
+          postalCode: orderObj.shippingAddress?.postalCode || '0000',
+          country: orderObj.shippingAddress?.country || 'Panama'
+        };
+      }
+      
+      return orderObj;
+    });
+    
+    return enrichedOrders;
   } catch (error) {
     throw new Error('Error fetching user orders: ' + error.message);
   }
@@ -295,6 +334,44 @@ export const getAllOrders = async (page = 1, limit = 10) => {
     };
   } catch (error) {
     throw new Error('Error fetching orders: ' + error.message);
+  }
+};
+
+// Cancel order (user can only cancel pending/processing orders)
+export const cancelOrder = async (orderId, userId) => {
+  try {
+    const order = await Order.findOne({
+      _id: orderId,
+      userId: userId,
+      status: { $in: ['pending', 'processing'] }
+    });
+    
+    if (!order) {
+      throw new Error('Order not found or cannot be cancelled');
+    }
+    
+    // Restore product stock
+    for (const item of order.items) {
+      await Product.findByIdAndUpdate(
+        item.productId,
+        { $inc: { stock: item.quantity } }
+      );
+    }
+    
+    // Update order status to cancelled
+    const updatedOrder = await Order.findByIdAndUpdate(
+      orderId,
+      { 
+        status: 'cancelled',
+        updatedAt: new Date()
+      },
+      { new: true }
+    ).populate('userId', 'fullName email phone address')
+     .populate('items.productId', 'name images');
+    
+    return updatedOrder;
+  } catch (error) {
+    throw new Error('Error cancelling order: ' + error.message);
   }
 };
 

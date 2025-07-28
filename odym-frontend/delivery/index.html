@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Repartidor - Odym</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-100">
+    <!-- Header -->
+    <header class="bg-orange-600 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center">
+                        <span class="text-3xl font-extrabold text-gray-800">OD<span class="text-white">YM</span></span>
+                        
+                    </div>
+                    <i class="fas fa-truck text-2xl"></i>
+                    <h1 class="text-xl font-bold">Panel de Repartidor</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="deliveryPersonName" class="font-medium">Cargando...</span>
+                    <button id="logoutBtn" class="bg-orange-700 hover:bg-orange-800 px-4 py-2 rounded transition duration-300">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Cerrar Sesión
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-8">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                        <i class="fas fa-clock text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Disponibles</p>
+                        <p id="availableCount" class="text-2xl font-bold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                        <i class="fas fa-truck text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">En Tránsito</p>
+                        <p id="inTransitCount" class="text-2xl font-bold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-green-100 text-green-600">
+                        <i class="fas fa-check-circle text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Entregadas Hoy</p>
+                        <p id="deliveredTodayCount" class="text-2xl font-bold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                        <i class="fas fa-calendar-week text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Esta Semana</p>
+                        <p id="weeklyCount" class="text-2xl font-bold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="bg-white rounded-lg shadow-md">
+            <div class="border-b border-gray-200">
+                <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                    <button id="availableTab" class="tab-button active border-orange-500 text-orange-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                        <i class="fas fa-list mr-2"></i>Órdenes Disponibles
+                    </button>
+                    <button id="myOrdersTab" class="tab-button border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                        <i class="fas fa-truck mr-2"></i>Mis Órdenes
+                    </button>
+                    <button id="deliveredTab" class="tab-button border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                        <i class="fas fa-check-circle mr-2"></i>Entregadas
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="p-6">
+                <!-- Available Orders Tab -->
+                <div id="availableContent" class="tab-content">
+                    <div class="mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Órdenes Disponibles para Entrega</h3>
+                        <p class="text-gray-600">Selecciona una orden para asignarla a tu ruta de entrega.</p>
+                    </div>
+                    <div id="availableOrdersList" class="space-y-4">
+                        <!-- Available orders will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- My Orders Tab -->
+                <div id="myOrdersContent" class="tab-content hidden">
+                    <div class="mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Mis Órdenes en Tránsito</h3>
+                        <p class="text-gray-600">Órdenes asignadas a ti que están en proceso de entrega.</p>
+                    </div>
+                    <div id="myOrdersList" class="space-y-4">
+                        <!-- My orders will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Delivered Tab -->
+                <div id="deliveredContent" class="tab-content hidden">
+                    <div class="mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Órdenes Entregadas</h3>
+                        <p class="text-gray-600">Historial de órdenes que has entregado exitosamente.</p>
+                    </div>
+                    <div id="deliveredOrdersList" class="space-y-4">
+                        <!-- Delivered orders will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div id="loadingModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg p-6 text-center">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto mb-4"></div>
+            <p class="text-gray-700">Procesando...</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../assets/js/auth-service.js"></script>
+    <script src="scripts.js"></script>
+</body>
+</html>

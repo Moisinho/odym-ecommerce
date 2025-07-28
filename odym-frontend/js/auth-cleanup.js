@@ -56,10 +56,6 @@
           localStorage.removeItem(key);
         });
       },
-
-      /**
-       * Validate current session and cleanup if invalid
-       */
       validateSession: () => {
         const user = localStorage.getItem('user');
         
@@ -71,7 +67,6 @@
             
             // Session expires after 24 hours
             if (now - sessionTime > 24 * 60 * 60 * 1000) {
-              console.log('⏰ Sesión expirada, limpiando...');
               methods.cleanupAll();
               return false;
             }

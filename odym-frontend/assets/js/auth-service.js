@@ -113,11 +113,17 @@
         ) {
           const user = methods.getUser();
           const isAdmin = methods.isAdminUser(user);
+          const isDelivery = methods.isDeliveryUser(user);
 
           if (isAdmin) {
             // Force admin redirect with flag to prevent loops
             const adminUrl = `${BASE_URL}/admin/index.html?redirected=true`;
             window.location.replace(adminUrl);
+            return false;
+          } else if (isDelivery) {
+            // Delivery user redirect
+            const deliveryUrl = `${BASE_URL}/delivery/index.html?redirected=true`;
+            window.location.replace(deliveryUrl);
             return false;
           } else {
             // Regular user redirect
@@ -200,6 +206,16 @@
         return adminIdentifiers.some((condition) => condition === true);
       },
 
+      // Nueva función para detectar usuarios repartidores
+      isDeliveryUser: (user) => {
+        if (!user) return false;
+
+        const userRole = (user.role || "").toLowerCase();
+        const userType = (user.type || "").toLowerCase();
+
+        return userRole === "delivery" || userType === "delivery";
+      },
+
       /**
        * Enhanced admin login with proper session isolation
        */
@@ -267,12 +283,20 @@
             if (userMenu) {
               userMenu.innerHTML = `
                 <div class="px-4 py-2 border-b">
-                  <div class="font-bold text-gray-800">${user.fullName || user.username || "Usuario"
+                  <div class="font-bold text-gray-800">${user.name || user.fullName || user.username || "Usuario"
                 }</div>
                   <div class="text-xs text-gray-500">${user.email || "Sin email"
                 }</div>
                 </div>
-                <button id="logoutBtn" class="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100">Cerrar sesión</button>
+                <a href="profile.html" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                  <i class="fas fa-user mr-2"></i>Mi Perfil
+                </a>
+                <a href="orders.html" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                  <i class="fas fa-shopping-bag mr-2"></i>Mis Pedidos
+                </a>
+                <button id="logoutBtn" class="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100">
+                  <i class="fas fa-sign-out-alt mr-2"></i>Cerrar sesión
+                </button>
               `;
 
             } else {
@@ -369,6 +393,7 @@
       logout: methods.logout,
       checkAuth: methods.checkAuth,
       isAdminUser: methods.isAdminUser,
+      isDeliveryUser: methods.isDeliveryUser,
       initUserMenu: methods.initUserMenu,
 
       redirectAfterLogin: (user) => {
@@ -383,6 +408,11 @@
           // Force admin redirect without interference
           setTimeout(() => {
             window.location.href = `${BASE_URL}/admin/index.html`;
+          }, 100);
+        } else if (methods.isDeliveryUser(user)) {
+          // Delivery user redirect
+          setTimeout(() => {
+            window.location.href = `${BASE_URL}/delivery/index.html`;
           }, 100);
         } else {
           // Regular user redirect

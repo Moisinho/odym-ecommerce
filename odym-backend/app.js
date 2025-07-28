@@ -1,18 +1,19 @@
+import { config } from 'dotenv';
 import Fastify from 'fastify';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { config } from 'dotenv';
 import { connect } from './config/db.js';
 import categoryRoutes from './routes/api/category.routes.js';
-import customerRoutes from './routes/api/customer.routes.js';
 import checkoutRoutes from './routes/api/checkout.js';
+import customerRoutes from './routes/api/customer.routes.js';
 
+import analyticsRoutes from './routes/api/analytics.routes.js';
+import cartRoutes from './routes/api/cart.routes.js';
+import deliveryRoutes from './routes/api/delivery.routes.js';
+import orderRoutes from './routes/api/order.routes.js';
 import paymentRoutes from './routes/api/payment.routes.js';
 import productRoutes from './routes/api/product.routes.js';
-import cartRoutes from './routes/api/cart.routes.js';
-import orderRoutes from './routes/api/order.routes.js';
 import productsByIdsRoutes from './routes/api/products-by-ids.js';
-import analyticsRoutes from './routes/api/analytics.routes.js';
 
 // New CRUD routes
 import adminRoutes from './routes/api/admin.routes.js';
@@ -24,11 +25,11 @@ import { initializeDefaultSubscriptions } from './services/subscription.service.
 import cors from '@fastify/cors';
 
 // Import models for database decoration
-import User from './models/User.js';
-import Product from './models/Product.js';
+import Category from './models/Category.js';
 import Order from './models/Order.js';
 import Payment from './models/Payment.js';
-import Category from './models/Category.js';
+import Product from './models/Product.js';
+import User from './models/User.js';
 import Admin from './models/Admin.js';
 import Bill from './models/Bill.js';
 import Distributor from './models/Distributor.js';
@@ -119,6 +120,7 @@ app.register(adminRoutes, { prefix: '/api/admins' });
 app.register(billRoutes, { prefix: '/api/bills' });
 app.register(distributorRoutes, { prefix: '/api/distributors' });
 app.register(subscriptionRoutes, { prefix: '/api/subscriptions' });
+app.register(deliveryRoutes, { prefix: '/api/delivery' });
 
 // Serve static files (frontend assets)
 app.register(import('@fastify/static'), {
