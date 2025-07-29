@@ -74,6 +74,23 @@ async function checkoutRoutes(fastify, options) {
           totalAmount += product.price * item.quantity;
         }
       }
+      
+      // Añadir costo de envío fijo de $15
+      const shippingCost = 15;
+      totalAmount += shippingCost;
+      
+      // Añadir item de envío a Stripe
+      line_items.push({
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: 'Gastos de envío',
+            description: 'Costo fijo de envío',
+          },
+          unit_amount: shippingCost * 100,
+        },
+        quantity: 1,
+      });
 
       // Crear sesión en Stripe
       const session = await stripe.checkout.sessions.create({
@@ -87,6 +104,7 @@ async function checkoutRoutes(fastify, options) {
           cart: JSON.stringify(items),
           userId: userId || 'guest',
           totalAmount: totalAmount.toString(),
+          shippingCost: shippingCost.toString(),
         }
       });
 
@@ -202,6 +220,7 @@ async function handleCheckoutSessionCompleted(session, fastify) {
     const items = JSON.parse(metadata.cart || '[]');
     const userId = metadata.userId || 'guest';
     const totalAmount = parseFloat(metadata.totalAmount || 0);
+    const shippingCost = parseFloat(metadata.shippingCost || 15);
 
     // Get product details
     const productIds = items.map(item => item.productId);

@@ -143,6 +143,10 @@ async function proceedToCheckout() {
     const data = await response.json();
 
     if (data.success && data.url) {
+      // Guardar información de la sesión de checkout
+      // Importante: Guardamos el carrito actual para poder restaurarlo si el usuario cancela
+      const currentCart = JSON.parse(localStorage.getItem("cart") || "[]");
+      
       localStorage.setItem(
         "checkoutSession",
         JSON.stringify({
@@ -150,6 +154,7 @@ async function proceedToCheckout() {
           orderId: data.orderId || null,
           timestamp: Date.now(),
           type: "cart_checkout",
+          savedCart: currentCart // Guardar el carrito actual
         })
       );
 
@@ -239,6 +244,10 @@ async function buyNowFromModal(productId, quantity = 1) {
     const data = await response.json();
 
     if (data.success && data.url) {
+      // Guardar información de la sesión de checkout
+      // Importante: Guardamos el carrito actual para poder restaurarlo si el usuario cancela
+      const currentCart = JSON.parse(localStorage.getItem("cart") || "[]");
+      
       localStorage.setItem(
         "checkoutSession",
         JSON.stringify({
@@ -246,6 +255,7 @@ async function buyNowFromModal(productId, quantity = 1) {
           orderId: data.orderId || null,
           timestamp: Date.now(),
           type: "buy_now",
+          savedCart: currentCart // Guardar el carrito actual
         })
       );
 
@@ -303,7 +313,7 @@ async function toggleCart() {
 
         const cartItem = document.createElement("div");
         cartItem.className =
-          "flex items-start py-4 border-b border-gray-200 last:border-b-0";
+          "cart-item flex items-start py-4 border-b border-gray-200 last:border-b-0";
 
         const productImage =
           product.images?.[0] ||
@@ -324,19 +334,19 @@ async function toggleCart() {
                       2
                     )}</p>
                 </div>
-                <div class="flex flex-col items-end space-y-2">
+                <div class="flex-col items-end space-y-2">
                     <div class="flex items-center bg-gray-100 rounded">
                         <button class="px-3 py-1 text-gray-600 hover:text-gray-800" onclick="decrementCartItem(${index})">
                             <i class="fas fa-minus text-xs"></i>
                         </button>
-                        <span class="px-3 py-1 font-medium text-sm">${
+                        <span class="px-3 py-1 font-medium text-sm cart-item-quantity">${
                           item.quantity
                         }</span>
                         <button class="px-3 py-1 text-gray-600 hover:text-gray-800" onclick="incrementCartItem(${index})">
                             <i class="fas fa-plus text-xs"></i>
                         </button>
                     </div>
-                    <p class="font-bold text-lg">$${(
+                    <p class="font-bold text-lg cart-item-total">$${(
                       productPrice * item.quantity
                     ).toFixed(2)}</p>
                     <button class="text-red-500 hover:text-red-700 text-sm" onclick="removeCartItem(${index})">
@@ -400,6 +410,21 @@ function incrementCartItem(index) {
     cart[index].quantity += 1;
     localStorage.setItem("cart", JSON.stringify(cart));
     updateCartCount();
+    
+    // Actualizar la cantidad mostrada en la interfaz
+    const quantityElement = document.querySelectorAll('.cart-item-quantity')[index];
+    if (quantityElement) {
+      quantityElement.textContent = cart[index].quantity;
+    }
+    
+    // Actualizar el precio total del producto
+    const totalElement = document.querySelectorAll('.cart-item-total')[index];
+    if (totalElement) {
+      totalElement.textContent = `$${(product.price * cart[index].quantity).toFixed(2)}`;
+    }
+    
+    // Actualizar el resumen del carrito
+    updateCartSummary();
   }
 }
 
@@ -409,6 +434,21 @@ function decrementCartItem(index) {
     cart[index].quantity -= 1;
     localStorage.setItem("cart", JSON.stringify(cart));
     updateCartCount();
+    
+    // Actualizar la cantidad mostrada en la interfaz
+    const quantityElement = document.querySelectorAll('.cart-item-quantity')[index];
+    if (quantityElement) {
+      quantityElement.textContent = cart[index].quantity;
+    }
+    
+    // Actualizar el precio total del producto
+    const totalElement = document.querySelectorAll('.cart-item-total')[index];
+    if (totalElement) {
+      totalElement.textContent = `$${(cart[index].product.price * cart[index].quantity).toFixed(2)}`;
+    }
+    
+    // Actualizar el resumen del carrito
+    updateCartSummary();
   }
 }
 
@@ -420,7 +460,32 @@ function removeCartItem(index) {
     localStorage.setItem("cart", JSON.stringify(cart));
     updateCartCount();
     showNotification(`${productName} eliminado del carrito`, "info");
+    
+    // Recargar el carrito para mostrar los cambios
+    toggleCart();
   }
+}
+
+// Función para actualizar el resumen del carrito
+function updateCartSummary() {
+  const cart = JSON.parse(localStorage.getItem("cart")) || [];
+  
+  // Calcular subtotal, envío y total
+  const subtotal = cart.reduce(
+    (total, item) => total + item.product.price * item.quantity,
+    0
+  );
+  const shipping = cart.length > 0 ? 15 : 0;
+  const total = subtotal + shipping;
+  
+  // Actualizar los elementos en la interfaz
+  const subtotalElement = document.getElementById("cartSubtotal");
+  const shippingElement = document.getElementById("cartShipping");
+  const totalElement = document.getElementById("cartTotal");
+  
+  if (subtotalElement) subtotalElement.textContent = `$${subtotal.toFixed(2)}`;
+  if (shippingElement) shippingElement.textContent = `$${shipping.toFixed(2)}`;
+  if (totalElement) totalElement.textContent = `$${total.toFixed(2)}`;
 }
 
 // Función para cerrar modal

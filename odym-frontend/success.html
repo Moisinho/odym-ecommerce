@@ -49,8 +49,19 @@
         const urlParams = new URLSearchParams(window.location.search);
         const sessionId = urlParams.get('session_id');
         
-        // Limpiar carrito después de compra exitosa
-        localStorage.removeItem('cart');
+        // Obtener información de la sesión de checkout
+        const checkoutSession = JSON.parse(localStorage.getItem('checkoutSession') || '{}');
+        
+        // Solo limpiar el carrito si la compra fue del carrito completo
+        // Si fue una compra directa (buy_now), restaurar el carrito guardado
+        if (checkoutSession && checkoutSession.type === 'cart_checkout') {
+            localStorage.removeItem('cart');
+        } else if (checkoutSession && checkoutSession.type === 'buy_now' && 
+                   checkoutSession.savedCart && Array.isArray(checkoutSession.savedCart)) {
+            // Restaurar el carrito guardado si fue una compra directa
+            localStorage.setItem('cart', JSON.stringify(checkoutSession.savedCart));
+            console.log('Carrito restaurado después de compra directa');
+        }
         
         // Cargar header y footer con inicialización completa
         Promise.all([
@@ -168,6 +179,15 @@
                                 <p class="font-semibold text-sm">$${(item.price * item.quantity).toFixed(2)}</p>
                             </div>
                         `).join('')}
+                        
+                        <!-- Mostrar gastos de envío -->
+                        <div class="flex justify-between items-center bg-white p-3 rounded">
+                            <div>
+                                <p class="font-medium text-sm">Gastos de envío</p>
+                                <p class="text-xs text-gray-600">Costo fijo de envío</p>
+                            </div>
+                            <p class="font-semibold text-sm">$15.00</p>
+                        </div>
                     </div>
                 </div>
 

@@ -39,6 +39,21 @@
     <script src="js/cart-global.js"></script>
     
     <script>
+        // Restaurar el carrito si el usuario canceló el checkout
+        function restoreCart() {
+            try {
+                const checkoutSession = JSON.parse(localStorage.getItem('checkoutSession') || '{}');
+                
+                // Si hay un carrito guardado en la sesión de checkout, restaurarlo
+                if (checkoutSession && checkoutSession.savedCart && Array.isArray(checkoutSession.savedCart)) {
+                    localStorage.setItem('cart', JSON.stringify(checkoutSession.savedCart));
+                    console.log('Carrito restaurado después de cancelar el checkout');
+                }
+            } catch (error) {
+                console.error('Error al restaurar el carrito:', error);
+            }
+        }
+        
         // Cargar header y footer con inicialización completa
         Promise.all([
             fetch('partials/header.html').then(r => r.text()),
@@ -46,6 +61,9 @@
         ]).then(([header, footer]) => {
             document.getElementById('header').innerHTML = header;
             document.getElementById('footer').innerHTML = footer;
+            
+            // Restaurar el carrito primero
+            restoreCart();
             
             // Inicializar AuthService después de cargar el header
             setTimeout(() => {
