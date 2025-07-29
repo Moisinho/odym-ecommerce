@@ -1,23 +1,5 @@
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
-// ---------- Helpers para usuarios premium ----------
-function isPremiumUserCart() {
-  if (typeof isPremiumUser === 'function') {
-    return isPremiumUser();
-  }
-  try {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    return user && ['God', 'ODYM God'].includes(user.subscription);
-  } catch (_) {
-    return false;
-  }
-}
-
-function applyPremiumDiscountCart(price) {
-  return isPremiumUserCart() ? price * 0.7 : price;
-}
-
-
 // Función para limpiar carrito
 function cleanCart() {
   try {
@@ -161,6 +143,10 @@ async function proceedToCheckout() {
     const data = await response.json();
 
     if (data.success && data.url) {
+      // Guardar información de la sesión de checkout
+      // Importante: Guardamos el carrito actual para poder restaurarlo si el usuario cancela
+      const currentCart = JSON.parse(localStorage.getItem("cart") || "[]");
+      
       localStorage.setItem(
         "checkoutSession",
         JSON.stringify({
@@ -168,6 +154,7 @@ async function proceedToCheckout() {
           orderId: data.orderId || null,
           timestamp: Date.now(),
           type: "cart_checkout",
+          savedCart: currentCart // Guardar el carrito actual
         })
       );
 
@@ -257,6 +244,10 @@ async function buyNowFromModal(productId, quantity = 1) {
     const data = await response.json();
 
     if (data.success && data.url) {
+      // Guardar información de la sesión de checkout
+      // Importante: Guardamos el carrito actual para poder restaurarlo si el usuario cancela
+      const currentCart = JSON.parse(localStorage.getItem("cart") || "[]");
+      
       localStorage.setItem(
         "checkoutSession",
         JSON.stringify({
@@ -264,6 +255,7 @@ async function buyNowFromModal(productId, quantity = 1) {
           orderId: data.orderId || null,
           timestamp: Date.now(),
           type: "buy_now",
+          savedCart: currentCart // Guardar el carrito actual
         })
       );
 
@@ -321,7 +313,7 @@ async function toggleCart() {
 
         const cartItem = document.createElement("div");
         cartItem.className =
-          "flex items-start py-4 border-b border-gray-200 last:border-b-0";
+          "cart-item flex items-start py-4 border-b border-gray-200 last:border-b-0";
 
         const productImage =
           product.images?.[0] ||
@@ -330,8 +322,7 @@ async function toggleCart() {
         const productName = product.name || "Producto sin nombre";
         const productCategory =
           product.category?.name || product.category || "Sin categoría";
-        const basePrice = product.price || 0;
-const productPrice = applyPremiumDiscountCart(basePrice);
+        const productPrice = product.price || 0;
 
         cartItem.innerHTML = `
                 <img src="${productImage}" alt="${productName}"
@@ -343,20 +334,20 @@ const productPrice = applyPremiumDiscountCart(basePrice);
                       2
                     )}</p>
                 </div>
-                <div class="flex flex-col items-end space-y-2">
+                <div class="flex-col items-end space-y-2">
                     <div class="flex items-center bg-gray-100 rounded">
                         <button class="px-3 py-1 text-gray-600 hover:text-gray-800" onclick="decrementCartItem(${index})">
                             <i class="fas fa-minus text-xs"></i>
                         </button>
-                        <span class="px-3 py-1 font-medium text-sm">${
+                        <span class="px-3 py-1 font-medium text-sm cart-item-quantity">${
                           item.quantity
                         }</span>
                         <button class="px-3 py-1 text-gray-600 hover:text-gray-800" onclick="incrementCartItem(${index})">
                             <i class="fas fa-plus text-xs"></i>
                         </button>
                     </div>
-                    <p class="font-bold text-lg">$${(
-                      applyPremiumDiscountCart(product.price || 0) * item.quantity
+                    <p class="font-bold text-lg cart-item-total">$${(
+                      productPrice * item.quantity
                     ).toFixed(2)}</p>
                     <button class="text-red-500 hover:text-red-700 text-sm" onclick="removeCartItem(${index})">
                         <i class="fas fa-trash mr-1"></i> Eliminar
@@ -370,7 +361,7 @@ const productPrice = applyPremiumDiscountCart(basePrice);
 
       // Actualizar resumen
       const subtotal = cart.reduce(
-        (total, item) => total + applyPremiumDiscountCart(item.product.price || 0) * item.quantity,
+        (total, item) => total + item.product.price * item.quantity,
         0
       );
       const shipping = 15;
@@ -407,65 +398,7 @@ const productPrice = applyPremiumDiscountCart(basePrice);
   }
 }
 
-// Rebuild cart modal content (without flicker)
-function rebuildCartModalContent() {
-  const cartItemsContainer = document.getElementById('cartItems');
-  if (!cartItemsContainer) return;
-  cartItemsContainer.innerHTML = '';
-
-  const scrollContainer = document.createElement("div");
-  scrollContainer.className = "max-h-60 overflow-y-auto divide-y divide-gray-200";
-
-  const localCart = JSON.parse(localStorage.getItem('cart')) || [];
-  localCart.forEach((item, index) => {
-    const product = item.product;
-    if (!product) return;
-
-    const productImage = product.images?.[0] || product.image || "/assets/img/placeholder-product.png";
-    const productName = product.name || "Producto sin nombre";
-    const productCategory = product.category?.name || product.category || "Sin categoría";
-    const productPrice = applyPremiumDiscountCart(product.price || 0);
-
-    const cartItem = document.createElement('div');
-    cartItem.className = "flex items-start py-4 border-b border-gray-200 last:border-b-0";
-    cartItem.innerHTML = `
-      <img src="${productImage}" alt="${productName}" class="w-20 h-20 object-cover rounded bg-gray-100 flex-shrink-0">
-      <div class="flex-1 ml-4">
-        <h4 class="font-semibold text-gray-900">${productName}</h4>
-        <p class="text-gray-600 text-sm">${productCategory}</p>
-        <p class="text-orange-600 font-bold text-lg mt-1">$${productPrice.toFixed(2)}</p>
-      </div>
-      <div class="flex flex-col items-end space-y-2">
-        <div class="flex items-center bg-gray-100 rounded">
-          <button class="px-3 py-1 text-gray-600 hover:text-gray-800" onclick="decrementCartItem(${index})"><i class="fas fa-minus text-xs"></i></button>
-          <span class="px-3 py-1 font-medium text-sm">${item.quantity}</span>
-          <button class="px-3 py-1 text-gray-600 hover:text-gray-800" onclick="incrementCartItem(${index})"><i class="fas fa-plus text-xs"></i></button>
-        </div>
-        <p class="font-bold text-lg">$${(productPrice * item.quantity).toFixed(2)}</p>
-        <button class="text-red-500 hover:text-red-700 text-sm" onclick="removeCartItem(${index})"><i class="fas fa-trash mr-1"></i> Eliminar</button>
-      </div>`;
-    scrollContainer.appendChild(cartItem);
-  });
-  cartItemsContainer.appendChild(scrollContainer);
-
-  // Update summary
-  const subtotal = localCart.reduce((total, item) => total + applyPremiumDiscountCart(item.product.price || 0) * item.quantity, 0);
-  const shipping = 15;
-  const total = subtotal + shipping;
-  const subEl = document.getElementById('cartSubtotal');
-  const shipEl = document.getElementById('cartShipping');
-  const totEl = document.getElementById('cartTotal');
-  if (subEl) subEl.textContent = `$${subtotal.toFixed(2)}`;
-  if (shipEl) shipEl.textContent = `$${shipping.toFixed(2)}`;
-  if (totEl) totEl.textContent = `$${total.toFixed(2)}`;
-}
-
 // Funciones de control del carrito
-// Refresca el contenido del carrito sin cerrar el modal
-function refreshCartModal() {
-  rebuildCartModalContent();
-}
-
 function incrementCartItem(index) {
   cart = JSON.parse(localStorage.getItem("cart")) || [];
   if (cart[index]) {
@@ -477,7 +410,21 @@ function incrementCartItem(index) {
     cart[index].quantity += 1;
     localStorage.setItem("cart", JSON.stringify(cart));
     updateCartCount();
-    refreshCartModal();
+    
+    // Actualizar la cantidad mostrada en la interfaz
+    const quantityElement = document.querySelectorAll('.cart-item-quantity')[index];
+    if (quantityElement) {
+      quantityElement.textContent = cart[index].quantity;
+    }
+    
+    // Actualizar el precio total del producto
+    const totalElement = document.querySelectorAll('.cart-item-total')[index];
+    if (totalElement) {
+      totalElement.textContent = `$${(product.price * cart[index].quantity).toFixed(2)}`;
+    }
+    
+    // Actualizar el resumen del carrito
+    updateCartSummary();
   }
 }
 
@@ -487,7 +434,21 @@ function decrementCartItem(index) {
     cart[index].quantity -= 1;
     localStorage.setItem("cart", JSON.stringify(cart));
     updateCartCount();
-    refreshCartModal();
+    
+    // Actualizar la cantidad mostrada en la interfaz
+    const quantityElement = document.querySelectorAll('.cart-item-quantity')[index];
+    if (quantityElement) {
+      quantityElement.textContent = cart[index].quantity;
+    }
+    
+    // Actualizar el precio total del producto
+    const totalElement = document.querySelectorAll('.cart-item-total')[index];
+    if (totalElement) {
+      totalElement.textContent = `$${(cart[index].product.price * cart[index].quantity).toFixed(2)}`;
+    }
+    
+    // Actualizar el resumen del carrito
+    updateCartSummary();
   }
 }
 
@@ -498,9 +459,33 @@ function removeCartItem(index) {
     cart.splice(index, 1);
     localStorage.setItem("cart", JSON.stringify(cart));
     updateCartCount();
-    refreshCartModal();
     showNotification(`${productName} eliminado del carrito`, "info");
+    
+    // Recargar el carrito para mostrar los cambios
+    toggleCart();
   }
+}
+
+// Función para actualizar el resumen del carrito
+function updateCartSummary() {
+  const cart = JSON.parse(localStorage.getItem("cart")) || [];
+  
+  // Calcular subtotal, envío y total
+  const subtotal = cart.reduce(
+    (total, item) => total + item.product.price * item.quantity,
+    0
+  );
+  const shipping = cart.length > 0 ? 15 : 0;
+  const total = subtotal + shipping;
+  
+  // Actualizar los elementos en la interfaz
+  const subtotalElement = document.getElementById("cartSubtotal");
+  const shippingElement = document.getElementById("cartShipping");
+  const totalElement = document.getElementById("cartTotal");
+  
+  if (subtotalElement) subtotalElement.textContent = `$${subtotal.toFixed(2)}`;
+  if (shippingElement) shippingElement.textContent = `$${shipping.toFixed(2)}`;
+  if (totalElement) totalElement.textContent = `$${total.toFixed(2)}`;
 }
 
 // Función para cerrar modal
@@ -599,7 +584,6 @@ function observeModalLoading() {
 function initGlobal() {
   cleanCart();
   updateCartCount();
-    refreshCartModal();
 
   // Conectar botones cuando el DOM esté listo
   const connectButtons = () => {
@@ -616,23 +600,6 @@ function initGlobal() {
     connectButtons();
   }
 }
-
-// Re-render cart when auth status changes
-window.addEventListener('auth-change', () => {
-  // If cart modal open or counter visible, re-open/render
-  const cartModal = document.getElementById('cartModal');
-  if (cartModal && cartModal.classList.contains('active')) {
-    toggleCartModal(); // close
-    toggleCartModal(); // open with recalculated prices
-  }
-  updateCartCount();
-  refreshCartModal();
-});
-
-window.addEventListener("storage", function () {
-  updateCartCount();
-  refreshCartModal();
-});
 
 // Inicializar
 initGlobal();
