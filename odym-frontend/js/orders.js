@@ -351,10 +351,13 @@ async function cancelOrder(orderId) {
     
     try {
         const response = await fetch(`http://localhost:3000/api/orders/${orderId}/cancel`, {
-            method: 'PUT',
+            method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({
+                userId: currentUser._id
+            })
         });
         
         const data = await response.json();
