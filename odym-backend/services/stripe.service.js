@@ -146,6 +146,53 @@ class StripeService {
       };
     }
   }
+
+  async createSubscriptionCheckoutSession({ customerEmail, userId, successUrl, cancelUrl }) {
+    try {
+      // Validaciones básicas
+      if (!customerEmail) {
+        return { success: false, error: 'Customer email is required' };
+      }
+
+      // Crear sesión de Stripe para suscripción premium
+      const session = await this.stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [{
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: 'Suscripción Premium ODYM',
+              description: '30% de descuento en todos los productos + Caja de productos mensual'
+            },
+            unit_amount: 3000 // $30.00 en centavos
+          },
+          quantity: 1
+        }],
+        mode: 'payment',
+        success_url: successUrl || `${process.env.FRONTEND_URL || 'http://localhost:5500'}/odym-frontend/success.html?session_id={CHECKOUT_SESSION_ID}&type=subscription`,
+        cancel_url: cancelUrl || `${process.env.FRONTEND_URL || 'http://localhost:5500'}/odym-frontend/cancel.html`,
+        customer_email: customerEmail,
+        metadata: {
+          userId: userId || 'guest',
+          type: 'premium_subscription',
+          subscriptionType: 'God'
+        }
+      });
+
+      return {
+        success: true,
+        sessionId: session.id,
+        url: session.url,
+        totalAmount: 30
+      };
+    } catch (error) {
+      console.error('Error creating subscription Stripe session:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
 }
 
 export default StripeService;

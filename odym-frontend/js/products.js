@@ -3,6 +3,32 @@ let products = [];
 let categories = [];
 const API_BASE_URL = 'http://localhost:3000/api';
 
+// Función para verificar si el usuario es premium
+function isPremiumUser() {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return user && ['God', 'ODYM God'].includes(user.subscription);
+}
+
+// Función para aplicar descuento premium
+function applyPremiumDiscount(price) {
+    return isPremiumUser() ? price * 0.7 : price;
+}
+
+// Función para mostrar precio con descuento
+function formatPriceWithDiscount(originalPrice) {
+    if (isPremiumUser()) {
+        const discountedPrice = applyPremiumDiscount(originalPrice);
+        return `
+            <div class="price-container">
+                <span class="original-price" style="text-decoration: line-through; color: #999; font-size: 0.9em;">$${originalPrice.toFixed(2)}</span>
+                <span class="discounted-price" style="color: #e74c3c; font-weight: bold; margin-left: 0.5rem;">$${discountedPrice.toFixed(2)}</span>
+                <span class="premium-badge" style="background: #f39c12; color: white; padding: 0.2rem 0.5rem; border-radius: 10px; font-size: 0.7em; margin-left: 0.5rem;">30% OFF</span>
+            </div>
+        `;
+    }
+    return `<span class="regular-price">$${originalPrice.toFixed(2)}</span>`;
+}
+
 // Función para cargar categorías dinámicamente desde backend
 async function loadCategories() {
   try {
@@ -118,7 +144,7 @@ function loadProducts() {
       '<div class="p-4">' +
       '<h3 class="font-semibold text-lg mb-2">' + product.name + '</h3>' +
       '<p class="text-gray-600 text-sm mb-2">' + (product.description ? product.description.substring(0, 100) : '') + '...</p>' +
-      '<p class="text-orange-600 font-bold text-xl mb-4">$' + (product.price ? product.price.toFixed(2) : '0.00') + '</p>' +
+      '<div class="mb-4">' + formatPriceWithDiscount(product.price || 0) + '</div>' +
       '<div class="flex space-x-2">' +
       '<button class="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded transition duration-300" onclick="handleAddToCart(\'' + product._id + '\', 1)">Añadir</button>' +
       '<button class="flex-1 bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded transition duration-300" onclick="viewProduct(\'' + product._id + '\')">Ver</button>' +
@@ -167,7 +193,7 @@ async function viewProduct(productId) {
     if (modalCategory)
       modalCategory.textContent = product.category?.name || "Sin categoría";
     if (modalPrice)
-      modalPrice.textContent = product.price?.toFixed(2) || "0.00";
+      modalPrice.innerHTML = formatPriceWithDiscount(product.price || 0);
     if (modalDescription)
       modalDescription.textContent =
         product.description || "Sin descripción disponible";
@@ -686,6 +712,13 @@ async function initiateStripeCheckout(productId, quantity = 1) {
 window.viewProduct = viewProduct;
 window.closeProductModal = closeProductModal;
 window.handleAddToCart = handleAddToCart;
+
+// Volver a renderizar lista de productos cuando cambie el estado de autenticación
+window.addEventListener('auth-change', () => {
+  if (document.getElementById('productsList')) {
+    loadProducts();
+  }
+});
 window.initiateStripeCheckout = initiateStripeCheckout;
 window.incrementQuantity = function () {
   const input = document.getElementById("productQuantity");

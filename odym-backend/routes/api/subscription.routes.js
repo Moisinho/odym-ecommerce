@@ -1,4 +1,13 @@
-import { createSubscription, getSubscriptions, updateSubscription, deleteSubscription } from '../../services/subscription.service.js';
+import { 
+  createSubscription, 
+  getSubscriptions, 
+  updateSubscription, 
+  deleteSubscription,
+  activatePremiumSubscription,
+  isPremiumUser,
+  getPremiumBoxProducts
+} from '../../services/subscription.service.js';
+import StripeService from '../../services/stripe.service.js';
 
 async function subscriptionRoutes(fastify, options) {
   fastify.get('/', async (request, reply) => {
@@ -71,6 +80,112 @@ async function subscriptionRoutes(fastify, options) {
         error: 'Internal server error',
         details: error.message 
       });
+    }
+  });
+
+  // Ruta para crear sesión de pago de suscripción premium
+  fastify.post('/premium/checkout', async (request, reply) => {
+    try {
+      const { customerEmail, userId } = request.body;
+      
+      if (!customerEmail) {
+        return reply.status(400).send({ error: 'Customer email is required' });
+      }
+
+      const stripeService = new StripeService(fastify.db);
+      const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5500/odym-frontend';
+      const result = await stripeService.createSubscriptionCheckoutSession({
+        customerEmail,
+        userId,
+        successUrl: `${baseUrl}/success.html?session_id={CHECKOUT_SESSION_ID}&type=subscription`,
+        cancelUrl: `${baseUrl}/cancel.html`
+      });
+
+      if (result.success) {
+        reply.send({
+          success: true,
+          sessionId: result.sessionId,
+          url: result.url
+        });
+      } else {
+        reply.status(400).send({ error: result.error });
+      }
+    } catch (error) {
+      console.error('Error creating premium subscription checkout:', error);
+      reply.status(500).send({ error: error.message });
+    }
+  });
+
+  // Ruta para verificar estado de suscripción premium
+  fastify.get('/premium/status/:userId', async (request, reply) => {
+    try {
+      const { userId } = request.params;
+      const isPremium = await isPremiumUser(userId);
+      
+      reply.send({
+        success: true,
+        isPremium,
+        subscriptionType: isPremium ? 'God' : 'User'
+      });
+    } catch (error) {
+      console.error('Error checking premium status:', error);
+      reply.status(500).send({ error: error.message });
+    }
+  });
+
+  // Ruta para activar suscripción premium después del pago
+  fastify.post('/premium/activate', async (request, reply) => {
+    try {
+      const { userId, sessionId } = request.body;
+      
+      if (!userId || !sessionId) {
+        return reply.status(400).send({ error: 'User ID and session ID are required' });
+      }
+
+      // Verificar el pago con Stripe
+      const stripeService = new StripeService(fastify.db);
+      const paymentResult = await stripeService.verifyPayment(sessionId);
+      
+      if (!paymentResult.success) {
+        return reply.status(400).send({ error: 'Payment verification failed' });
+      }
+
+      // Activar suscripción premium
+      const updatedCustomer = await activatePremiumSubscription(userId);
+      
+      // Crear orden para la caja de productos
+      const boxProducts = await getPremiumBoxProducts();
+      let boxOrder = null;
+      if (boxProducts.length > 0) {
+        const { createPremiumBoxOrder } = await import('../../services/order.service.js');
+        boxOrder = await createPremiumBoxOrder(userId, boxProducts, paymentResult.paymentIntentId);
+        console.log('📦 Caja premium creada (endpoint activate):', boxOrder._id);
+      }
+
+      reply.send({
+        success: true,
+        message: 'Premium subscription activated successfully',
+        customer: updatedCustomer,
+        boxProducts: boxProducts.length,
+        boxOrder
+      });
+    } catch (error) {
+      console.error('Error activating premium subscription:', error);
+      reply.status(500).send({ error: error.message });
+    }
+  });
+
+  // Ruta para obtener productos de la caja premium
+  fastify.get('/premium/box-products', async (request, reply) => {
+    try {
+      const products = await getPremiumBoxProducts();
+      reply.send({
+        success: true,
+        products
+      });
+    } catch (error) {
+      console.error('Error getting premium box products:', error);
+      reply.status(500).send({ error: error.message });
     }
   });
 }

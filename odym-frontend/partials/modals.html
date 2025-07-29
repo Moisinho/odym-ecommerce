@@ -32,7 +32,7 @@
                     
                     <div class="mb-6">
                         <p class="text-3xl font-bold text-orange-600">
-                            $<span id="modalProductPrice">0.00</span>
+                            <span id="modalProductPrice">0.00</span>
                         </p>
                         <p class="text-sm text-gray-500">
                             Stock disponible: <span id="stock" class="font-semibold">0</span> unidades
@@ -133,7 +133,7 @@
 <div id="confirmationModal" class="modal-overlay">
     <div class="modal-container w-full max-w-md">
         <div class="p-6 text-center">
-            <div class="mb-4 text-green-500">
+            <div class="mb-4 text-orange-500">
                 <i class="fas fa-check-circle text-6xl"></i>
             </div>
             <h3 class="text-2xl font-bold mb-2">¡Pedido realizado con éxito!</h3>
@@ -147,6 +147,56 @@
 </div>
 
 
+
+<!-- Modal de Suscripción Premium (Nuevo) -->
+<!-- Premium Subscription Modal (Enhanced) -->
+<div id="premiumModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+  <div class="relative bg-white/90 backdrop-blur-md w-full max-w-2xl mx-4 rounded-2xl shadow-2xl ring-1 ring-white/40 transform transition-all scale-95 sm:scale-100">
+    <!-- Header -->
+    <div class="flex items-center justify-between px-8 py-6 rounded-t-2xl bg-orange-600 text-white">
+      <h2 class="text-xl font-semibold tracking-wide">Hazte Premium</h2>
+      <button id="closePremiumModalBtn" class="modal-close"><i class="fas fa-times"></i></button>
+    </div>
+
+    <!-- Content -->
+    <div class="modal-content px-10 py-8 space-y-10">
+      <!-- Top copy -->
+      <div class="subscription-header text-center space-y-4">
+        <h1 class="text-3xl font-extrabold tracking-wide text-gray-800">Beneficios Exclusivos</h1>
+        <p class="text-gray-500 leading-relaxed max-w-md mx-auto">Accede a descuentos, contenido VIP y soporte prioritario.</p>
+      </div>
+
+      <!-- Card -->
+      <div class="subscription-card space-y-10">
+        <span class="premium-badge mx-auto inline-flex items-center gap-2 text-sm font-semibold bg-orange-100 text-orange-700 px-3 py-1 rounded-full shadow"><i class="fas fa-crown"></i> PREMIUM</span>
+
+        <!-- Price -->
+        <div class="subscription-price flex items-end justify-center gap-2">
+          <span class="price text-6xl font-extrabold text-orange-600 drop-shadow-lg">$30</span>
+          <span class="period text-lg text-gray-500">/ mes</span>
+        </div>
+
+        <!-- Benefits -->
+        <div class="subscription-benefits max-w-lg mx-auto">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">¿Qué incluye?</h3>
+          <ul class="space-y-4">
+            <li class="flex items-center text-gray-600"><i class="fas fa-check-circle text-orange-500 mr-3"></i><span>30% de descuento en todos los productos</span></li>
+            <li class="flex items-center text-gray-600"><i class="fas fa-box-open text-orange-500 mr-3"></i><span>Caja sorpresa mensual de suplementos & accesorios</span></li>
+            <li class="flex items-center text-gray-600"><i class="fas fa-play-circle text-orange-500 mr-3"></i><span>Acceso a contenido exclusivo</span></li>
+            <li class="flex items-center text-gray-600"><i class="fas fa-headset text-orange-500 mr-3"></i><span>Soporte prioritario 24/7</span></li>
+          </ul>
+        </div>
+
+        <!-- CTA -->
+        <div class="text-center">
+          <button id="premiumSubscribeBtn" class="w-full bg-orange-600 hover:bg-orange-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg transition">
+            Suscribirme ahora
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Modal de Autenticación -->
 <div id="authModal" class="modal-overlay">

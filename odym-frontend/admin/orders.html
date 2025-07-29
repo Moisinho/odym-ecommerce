@@ -15,7 +15,7 @@
     <div id="admin-loading" class="fixed inset-0 bg-gray-100 flex items-center justify-center z-50">
         <div class="text-center">
             <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
-            <p class="text-gray-600">Cargando pedidos...</p>
+            <p class="text-gray-600">Verificando autenticación...</p>
         </div>
     </div>
 
@@ -112,7 +112,7 @@
                             A
                         </div>
                         <div>
-                            <p class="font-medium text-sm">Admin User</p>
+                            <p class="font-medium text-sm" id="admin-name">Admin User</p>
                             <p class="text-xs text-gray-500">Administrador</p>
                         </div>
                     </div>
@@ -261,11 +261,38 @@
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="../assets/js/auth-service.js"></script>
-    <script src="../js/admin-login-fix.js"></script>
-    <script src="scripts.js"></script>
+    <!-- Admin common scripts -->
+    <script src="js/admin-common.js"></script>
     <script src="js/orders.js"></script>
+    <script>
+        // Orders page specific functionality
+        let ordersInitialized = false;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            // Wait for admin common to initialize, then show orders page
+            setTimeout(() => {
+                const user = AuthService.getUser();
+                if (user && AuthService.isAdmin(user)) {
+                    // Hide loading and show dashboard
+                    document.getElementById('admin-loading').style.display = 'none';
+                    document.getElementById('admin-dashboard').style.display = 'flex';
+                    
+                    // Initialize orders functionality only once
+                    if (!ordersInitialized) {
+                        ordersInitialized = true;
+                        // Call the orders initialization
+                        if (typeof loadOrders === 'function') {
+                            loadOrders();
+                            setupEventListeners();
+                        }
+                        console.log('✅ Página de pedidos inicializada');
+                    } else {
+                        console.log('⚠️ Orders ya está inicializado');
+                    }
+                }
+            }, 100);
+        });
+    </script>
 </body>
 
 </html>

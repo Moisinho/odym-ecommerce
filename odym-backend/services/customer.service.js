@@ -3,9 +3,15 @@ import User from '../models/User.js';
 // Get all customers
 export const getCustomers = async (request, reply) => {
   try {
+    console.log('🔄 Obteniendo usuarios de la colección users...');
     const customers = await User.find().select('-password');
-    reply.send(customers);
+    console.log(`📊 Total usuarios encontrados: ${customers.length}`);
+    console.log('👥 Usuarios por rol:', customers.map(c => `${c.name} (${c.role})`));
+    
+    // Return in the format expected by frontend
+    reply.send({ customers });
   } catch (error) {
+    console.error('❌ Error fetching customers:', error);
     reply.status(500).send({ error: 'Error fetching customers', details: error.message });
   }
 };
@@ -15,9 +21,9 @@ export const loginCustomer = async (request, reply) => {
   try {
     const { identifier, password } = request.body;
     
-    // Find customer by email or name (User model uses 'name' instead of 'username')
+    // Find customer by email or username
     const customer = await User.findOne({
-      $or: [{ email: identifier }, { name: identifier }]
+      $or: [{ email: identifier }, { username: identifier }]
     });
     
     if (!customer) {
@@ -45,6 +51,7 @@ export const loginCustomer = async (request, reply) => {
     reply.send({ 
       success: true, 
       customer: customerResponse,
+      user: customerResponse,
       message: 'Login successful' 
     });
   } catch (error) {
@@ -55,14 +62,18 @@ export const loginCustomer = async (request, reply) => {
 // Register customer
 export const registerCustomer = async (request, reply) => {
   try {
-    const { fullName, name, username, email, password, phone, address, role = 'user' } = request.body;
+    const { fullName, name, username, email, password, phone, address, subscription = '', role = 'user', bypassRestrictions = false } = request.body;
     
     // Use fullName as name if name is not provided (for compatibility)
-    const userName = name || fullName || username;
+    const userName = name || fullName;
+    const userUsername = username || userName;
+    
+    // Security measure: Force role to 'user' for public registration (unless bypassed)
+    const userRole = (!bypassRestrictions && (role === 'admin' || role === 'delivery')) ? 'user' : role;
     
     // Check if customer already exists
     const existingCustomer = await User.findOne({
-      $or: [{ email }, { name: userName }]
+      $or: [{ email }, { username: userUsername }]
     });
     
     if (existingCustomer) {
@@ -72,11 +83,13 @@ export const registerCustomer = async (request, reply) => {
     // Create customer (User model handles password hashing automatically)
     const customer = new User({
       name: userName,
+      username: userUsername,
       email,
       password,
       phone: phone || '',
       address: address || '',
-      role
+      subscription: subscription || (userRole === 'user' ? 'ODYM User' : ''),
+      role: userRole
     });
     
     await customer.save();
@@ -88,6 +101,7 @@ export const registerCustomer = async (request, reply) => {
     reply.status(201).send({ 
       success: true, 
       customer: customerResponse,
+      user: customerResponse,
       message: 'Customer registered successfully' 
     });
   } catch (error) {
@@ -99,11 +113,11 @@ export const registerCustomer = async (request, reply) => {
 export const updateCustomer = async (request, reply) => {
   try {
     const { id } = request.params;
-    const { fullName, username, email, password, subscription, phone, address, role } = request.body;
+    const { fullName, username, email, password, subscription, phone, address, role, bypassRestrictions = false } = request.body;
 
     // Verificar duplicados antes de actualizar (excluyendo el usuario actual)
     if (username) {
-      const existingUsername = await User.findOne({ name: username, _id: { $ne: id } });
+      const existingUsername = await User.findOne({ username, _id: { $ne: id } });
       if (existingUsername) {
         return reply.status(400).send({ error: 'El nombre de usuario ya está en uso' });
       }
@@ -117,13 +131,17 @@ export const updateCustomer = async (request, reply) => {
     }
 
     // Preparar datos de actualización
+    // Force role to 'user' for public updates (unless bypassed)
+    const userRole = (!bypassRestrictions && (role === 'admin' || role === 'delivery')) ? 'user' : (role || 'user');
+    
     const updateData = {
-      name: fullName || username,
+      name: fullName,
+      username: username || fullName,
       email,
       subscription: subscription || 'ODYM User',
       phone,
       address,
-      role: role || 'user'
+      role: userRole
     };
 
     // Solo hashear y actualizar contraseña si se proporciona una nueva
@@ -186,11 +204,11 @@ export const deleteCustomer = async (request, reply) => {
   }
 };
 
-// Check username availability (now checks 'name' field)
+// Check username availability
 export const checkUsername = async (request, reply) => {
   try {
     const { username } = request.params;
-    const customer = await User.findOne({ name: username });
+    const customer = await User.findOne({ username });
     reply.send({ available: !customer });
   } catch (error) {
     reply.status(500).send({ error: 'Error checking username', details: error.message });

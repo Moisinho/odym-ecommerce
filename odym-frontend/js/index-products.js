@@ -1,6 +1,37 @@
 // Almacenamos los productos destacados en una variable global
 window.featuredProducts = [];
 
+// Utilidades de precio premium (fallback en caso de que main.js aún no haya sido cargado)
+function isPremiumUserFallback() {
+  try {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return user && ['God', 'ODYM God'].includes(user.subscription);
+  } catch (_) {
+    return false;
+  }
+}
+
+function applyPremiumDiscountFallback(price) {
+  return isPremiumUserFallback() ? price * 0.7 : price;
+}
+
+function formatPriceWithDiscountFallback(originalPrice) {
+  // Si ya existe la función global de main.js úsala
+  if (typeof formatPriceWithDiscount === 'function') {
+    return formatPriceWithDiscount(originalPrice);
+  }
+  if (isPremiumUserFallback()) {
+    const discountedPrice = applyPremiumDiscountFallback(originalPrice);
+    return `
+      <div class="price-container">
+        <span class="original-price" style="text-decoration: line-through; color: #999; font-size: 0.9em;">$${originalPrice.toFixed(2)}</span>
+        <span class="discounted-price" style="color: #e74c3c; font-weight: bold; margin-left: 0.5rem;">$${discountedPrice.toFixed(2)}</span>
+        <span class="premium-badge" style="background: #f39c12; color: white; padding: 0.2rem 0.5rem; border-radius: 10px; font-size: 0.7em; margin-left: 0.5rem;">30% OFF</span>
+      </div>`;
+  }
+  return `<span class="regular-price text-orange-600 font-bold">$${originalPrice.toFixed(2)}</span>`;
+}
+
 async function fetchAndRenderFeaturedProducts() {
   try {
     // Usar el endpoint de productos más comprados
@@ -22,7 +53,7 @@ async function fetchAndRenderFeaturedProducts() {
           <h3 class="font-semibold text-lg mb-1">${product.name}</h3>
           <p class="text-gray-600 text-sm mb-3 line-clamp-2">${product.description || 'Sin descripción'}</p>
           <div class="flex justify-between items-center">
-            <div class="text-orange-600 font-bold">$${product.price?.toFixed(2) || '0.00'}</div>
+            <div>${formatPriceWithDiscountFallback(product.price || 0)}</div>
             ${product.purchaseStats ? `<div class="text-xs text-gray-500">${product.purchaseStats.totalOrders} órdenes</div>` : ''}
           </div>
         </div>
@@ -48,7 +79,7 @@ async function fetchAndRenderFeaturedProducts() {
           <div class="p-4">
             <h3 class="font-semibold text-lg mb-1">${product.name}</h3>
             <p class="text-gray-600 text-sm mb-3 line-clamp-2">${product.description || 'Sin descripción'}</p>
-            <div class="text-orange-600 font-bold">$${product.price?.toFixed(2) || '0.00'}</div>
+            <div>${formatPriceWithDiscountFallback(product.price || 0)}</div>
           </div>
         </div>
       `).join('');
@@ -59,3 +90,6 @@ async function fetchAndRenderFeaturedProducts() {
 }
 
 document.addEventListener('DOMContentLoaded', fetchAndRenderFeaturedProducts);
+
+// Volver a renderizar productos destacados cuando cambie la autenticación
+window.addEventListener('auth-change', fetchAndRenderFeaturedProducts);

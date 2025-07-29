@@ -9,7 +9,7 @@
     const api = {
       getClients: async () => {
         try {
-          console.log('🔄 Obteniendo clientes...');
+          console.log('🔄 Obteniendo clientes de tabla users...');
           const response = await fetch('http://localhost:3000/api/customers');
           
           if (!response.ok) {
@@ -18,7 +18,7 @@
           }
           
           const data = await response.json();
-          console.log('✅ Clientes obtenidos:', data);
+          console.log('✅ Usuarios obtenidos de tabla users:', data);
           return data.customers || [];
         } catch (error) {
           console.error('❌ Error fetching clients:', error);
@@ -41,8 +41,10 @@
       },
       createClient: async (clientData) => {
         try {
-          console.log('🔄 Enviando datos del cliente:', clientData);
-          const response = await fetch('http://localhost:3000/api/customers', {
+          console.log('🔄 Creando cliente en tabla users...');
+          console.log('📝 Datos del cliente:', { ...clientData, password: '[HIDDEN]' });
+          
+          const response = await fetch('http://localhost:3000/api/users/admin-create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(clientData),
@@ -65,7 +67,7 @@
           }
           
           const result = await response.json();
-          console.log('✅ Cliente creado exitosamente:', result);
+          console.log('✅ Cliente creado exitosamente en tabla users con role: user');
           return result;
         } catch (error) {
           console.error('❌ Error creating client:', error);
@@ -74,8 +76,10 @@
       },
       updateClient: async (clientData) => {
         try {
-          console.log('🔄 Actualizando cliente:', clientData);
-          const response = await fetch(`http://localhost:3000/api/customers/${clientData._id}`, {
+          console.log('🔄 Actualizando cliente en tabla users...');
+          console.log('📝 Datos del cliente:', { ...clientData, password: clientData.password ? '[UPDATED]' : '[UNCHANGED]' });
+          
+          const response = await fetch(`http://localhost:3000/api/users/admin-update/${clientData._id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(clientData),
@@ -97,7 +101,7 @@
           }
           
           const result = await response.json();
-          console.log('✅ Cliente actualizado exitosamente:', result);
+          console.log('✅ Cliente actualizado exitosamente en tabla users');
           return result;
         } catch (error) {
           console.error('❌ Error updating client:', error);
@@ -106,16 +110,23 @@
       },
       deleteClient: async (clientId) => {
         try {
+          console.log('🗑️ Eliminando cliente de tabla users...');
+          
           const response = await fetch(`http://localhost:3000/api/customers/${clientId}`, {
             method: 'DELETE',
           });
+          
           if (!response.ok) {
             const errorData = await response.json();
+            console.error('❌ Error del servidor:', errorData);
             throw new Error(errorData.error || 'Could not delete client');
           }
-          return await response.json();
+          
+          const result = await response.json();
+          console.log('✅ Cliente eliminado exitosamente de tabla users');
+          return result;
         } catch (error) {
-          console.error('Error deleting client:', error);
+          console.error('❌ Error deleting client:', error);
           throw error;
         }
       },
@@ -163,8 +174,13 @@
         }
 
         htmlElements.clientsTableBody.innerHTML = '';
-        // Filter out admin users - they should appear in administrators section
-        const regularClients = clients.filter(client => client.role !== 'admin');
+        // Filter out admin and delivery users - they should appear in their respective sections
+        const regularClients = clients.filter(client => 
+          client.role !== 'admin' && client.role !== 'delivery'
+        );
+        
+        console.log('👥 Clientes filtrados (solo role: user):', regularClients.length);
+        console.log('📋 Clientes encontrados:', regularClients);
         
         regularClients.forEach(client => {
           const row = document.createElement('tr');
@@ -180,8 +196,9 @@
                   <i class="fas fa-user text-orange-600"></i>
                 </div>
                 <div class="text-left">
-                  <div class="text-sm font-medium text-gray-900 client-name">${client.fullName || 'N/A'}</div>
-                  <div class="text-sm text-gray-500">@${client.username || 'N/A'}</div>
+                  <div class="text-sm font-medium text-gray-900 client-name">${client.fullName || client.name || 'N/A'}</div>
+                  <div class="text-sm text-gray-500">@${client.username || client.name || 'N/A'}</div>
+                  <div class="text-xs text-orange-600 font-semibold">Role: ${client.role}</div>
                 </div>
               </div>
             </td>

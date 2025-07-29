@@ -1,4 +1,4 @@
-import Customer from '../models/Customer.js';
+import User from '../models/User.js';
 import Order from '../models/Order.js';
 import Payment from '../models/Payment.js';
 import Product from '../models/Product.js';
@@ -7,7 +7,7 @@ import stripe from './stripe.service.js';
 // Create order from cart
 export const createOrder = async (userId, shippingAddress) => {
   try {
-    const user = await Customer.findById(userId);
+    const user = await User.findById(userId);
     if (!user) throw new Error('User not found');
     
     // Note: Customer model doesn't have cart, so this function needs to be used with createOrderFromItems
@@ -25,13 +25,13 @@ export const createOrderFromItems = async (userId, items, shippingAddress) => {
     }
 
     // Get user information
-    const user = await Customer.findById(userId);
+    const user = await User.findById(userId);
     if (!user) throw new Error('User not found');
 
     // Always use user's address for shipping
     shippingAddress = {
-      firstName: user.fullName.split(' ')[0] || user.fullName,
-      lastName: user.fullName.split(' ').slice(1).join(' ') || '',
+      firstName: user.name.split(' ')[0] || user.name,
+      lastName: user.name.split(' ').slice(1).join(' ') || '',
       email: user.email,
       phone: user.phone || 'No disponible',
       address: user.address || 'Dirección no especificada',
@@ -94,7 +94,7 @@ export const createOrderFromItems = async (userId, items, shippingAddress) => {
 export const getOrderById = async (orderId) => {
   try {
     const order = await Order.findById(orderId)
-      .populate('userId', 'fullName email phone address')
+      .populate('userId', 'name email phone address')
       .populate('items.productId', 'name images');
     
     if (!order) throw new Error('Order not found');
@@ -111,8 +111,8 @@ export const getUserOrders = async (userId) => {
       .populate('items.productId', 'name images')
       .sort({ createdAt: -1 });
     
-    // Enrich orders with current user data from Customer model
-    const user = await Customer.findById(userId);
+    // Enrich orders with current user data from User model
+    const user = await User.findById(userId);
     const enrichedOrders = orders.map(order => {
       const orderObj = order.toObject();
       
@@ -120,8 +120,8 @@ export const getUserOrders = async (userId) => {
       if (user) {
         orderObj.shippingAddress = {
           ...orderObj.shippingAddress,
-          firstName: user.fullName.split(' ')[0] || user.fullName,
-          lastName: user.fullName.split(' ').slice(1).join(' ') || '',
+          firstName: user.name.split(' ')[0] || user.name,
+          lastName: user.name.split(' ').slice(1).join(' ') || '',
           email: user.email,
           phone: user.phone || 'No disponible',
           address: user.address || 'Dirección no especificada',
@@ -182,6 +182,68 @@ export const updatePaymentStatus = async (orderId, paymentStatus, paymentIntentI
 };
 
 // Create Stripe payment intent for order
+// Create premium box order (called after subscription purchase)
+export const createPremiumBoxOrder = async (userId, products, paymentIntentId = null) => {
+  try {
+    // Idempotencia: evitar duplicados por mismo usuario + paymentIntent
+    const existing = await Order.findOne({
+      userId,
+      orderType: 'premium_box',
+      ...(paymentIntentId ? { paymentIntentId: paymentIntentId + '_premium_box' } : {})
+    });
+    if (existing) return existing;
+
+    if (!products || products.length === 0) throw new Error('No products supplied for premium box');
+    if (!products || products.length === 0) throw new Error('No products supplied for premium box');
+
+    // Build items array with price 0 (incluido en suscripción)
+    const items = products.map(p => ({
+      productId: p._id,
+      name: `📦 Caja Premium - ${p.name}`,
+      price: 0,
+      quantity: 1,
+      image: p.images?.[0] || ''
+    }));
+
+    // Get user and shipping address
+    const user = await User.findById(userId);
+    if (!user) throw new Error('User not found');
+
+    const shippingAddress = {
+      firstName: user.name?.split(' ')[0] || user.fullName?.split(' ')[0] || 'Cliente',
+      lastName: user.name?.split(' ').slice(1).join(' ') || user.fullName?.split(' ').slice(1).join(' ') || '',
+      email: user.email,
+      phone: user.phone || '',
+      address: user.address || '',
+      city: 'Ciudad de Panamá',
+      postalCode: '0000',
+      country: 'Panama'
+    };
+
+    const order = new Order({
+      userId,
+      items,
+      totalAmount: 0,
+      status: 'processing',
+      paymentStatus: 'paid',
+      paymentIntentId: paymentIntentId ? paymentIntentId + '_premium_box' : undefined,
+      shippingAddress,
+      orderType: 'premium_box'
+    });
+
+    await order.save();
+
+    // Decrement stock
+    for (const item of items) {
+      await Product.findByIdAndUpdate(item.productId, { $inc: { stock: -1 } });
+    }
+
+    return order;
+  } catch (err) {
+    throw new Error('Error creating premium box order: ' + err.message);
+  }
+};
+
 export const createPaymentIntent = async (orderId) => {
   try {
     const order = await Order.findById(orderId);
@@ -292,7 +354,7 @@ export const createOrderFromStripeSession = async (session) => {
 export const getOrderWithPayment = async (orderId) => {
   try {
     const order = await Order.findById(orderId)
-      .populate('userId', 'fullName email phone address')
+      .populate('userId', 'name email phone address')
       .populate('items.productId', 'name price images');
     
     if (!order) {
@@ -313,7 +375,7 @@ export const getAllOrders = async (page = 1, limit = 10) => {
     const skip = (page - 1) * limit;
     
     const orders = await Order.find()
-      .populate('userId', 'fullName email phone address')
+      .populate('userId', 'name email phone address')
       .populate('items.productId', 'name images')
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -366,7 +428,7 @@ export const cancelOrder = async (orderId, userId) => {
         updatedAt: new Date()
       },
       { new: true }
-    ).populate('userId', 'fullName email phone address')
+    ).populate('userId', 'name email phone address')
      .populate('items.productId', 'name images');
     
     return updatedOrder;

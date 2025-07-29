@@ -6,6 +6,7 @@ import { connect } from './config/db.js';
 import categoryRoutes from './routes/api/category.routes.js';
 import checkoutRoutes from './routes/api/checkout.js';
 import customerRoutes from './routes/api/customer.routes.js';
+import userRoutes from './routes/api/user.routes.js';
 
 import analyticsRoutes from './routes/api/analytics.routes.js';
 import cartRoutes from './routes/api/cart.routes.js';
@@ -109,6 +110,7 @@ app.register(productRoutes, { prefix: '/api/products' });
 app.register(categoryRoutes, { prefix: '/api/categories' });
 app.register(cartRoutes, { prefix: '/api/cart' });
 app.register(customerRoutes, { prefix: '/api/customers' });
+app.register(userRoutes, { prefix: '/api/users' });
 app.register(orderRoutes, { prefix: '/api/orders' });
 app.register(checkoutRoutes, { prefix: '/api/checkout' });
 app.register(paymentRoutes, { prefix: '/api/payment' });

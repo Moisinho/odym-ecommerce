@@ -1,6 +1,47 @@
 const API_BASE_URL = "http://localhost:3000/api";
 let currentProduct = null;
 
+// Función para verificar si el usuario es premium
+function isPremiumUser() {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return user && ['God', 'ODYM God'].includes(user.subscription);
+}
+
+// Función para aplicar descuento premium
+function applyPremiumDiscount(price) {
+    return isPremiumUser() ? price * 0.7 : price;
+}
+
+// Función para mostrar precio con descuento
+function formatPriceWithDiscount(originalPrice) {
+    if (isPremiumUser()) {
+        const discountedPrice = applyPremiumDiscount(originalPrice);
+        return `
+            <div class="price-container">
+                <span class="original-price" style="text-decoration: line-through; color: #999; font-size: 0.9em;">$${originalPrice.toFixed(2)}</span>
+                <span class="discounted-price" style="color: #e74c3c; font-weight: bold; margin-left: 0.5rem;">$${discountedPrice.toFixed(2)}</span>
+                <span class="premium-badge" style="background: #f39c12; color: white; padding: 0.2rem 0.5rem; border-radius: 10px; font-size: 0.7em; margin-left: 0.5rem;">30% OFF</span>
+            </div>
+        `;
+    }
+    return `<span class="regular-price text-orange-600 font-bold">$${originalPrice.toFixed(2)}</span>`;
+}
+
+// Función para verificar y mostrar sección premium
+function checkAndShowPremiumSection() {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const premiumSection = document.getElementById('premium-section');
+    
+    if (premiumSection) {
+        // Solo mostrar si el usuario está logueado y no es premium
+        if (user && user._id && user.subscription !== 'God') {
+            premiumSection.style.display = 'block';
+        } else {
+            premiumSection.style.display = 'none';
+        }
+    }
+}
+
 // Funciones de navegación
 function filterByCategory(category) {
   if (window.location.pathname.includes("products.html")) {
@@ -41,9 +82,7 @@ async function loadFeaturedProducts() {
                 </div>
                 <div class="p-4">
                     <h3 class="font-semibold text-lg mb-2">${product.name}</h3>
-                    <p class="text-orange-600 font-bold mb-4">$${product.price.toFixed(
-                      2
-                    )}</p>
+                    <div class="mb-4">${formatPriceWithDiscount(product.price)}</div>
                     <div class="flex space-x-2">
                         <button class="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded transition duration-300" onclick="addToCart('${
                           product._id
@@ -177,9 +216,7 @@ function displayBasicCart() {
                 <p class="text-gray-600 text-sm">${
                   product.category?.name || product.category || "Sin categoría"
                 }</p>
-                <p class="text-orange-600 font-bold text-lg mt-1">$${(
-                  product.price || 0
-                ).toFixed(2)}</p>
+                <div class="mt-1">${formatPriceWithDiscount(product.price || 0)}</div>
             </div>
             <div class="flex flex-col items-end space-y-2">
                 <div class="flex items-center bg-gray-100 rounded">
@@ -318,6 +355,20 @@ function initializeAuthentication() {
 }
 
 // Modifica el event listener del DOMContentLoaded
+// Escuchar cambios de autenticación para re-renderizar precios con descuento
+window.addEventListener('auth-change', () => {
+  // Si el usuario ahora es premium (o deja de serlo), volvemos a renderizar listas
+  if (document.getElementById('featuredProducts')) {
+    loadFeaturedProducts();
+  }
+  if (document.getElementById('productsList')) {
+    // products.js define loadProducts, verificar existencia
+    if (typeof loadProducts === 'function') {
+      loadProducts();
+    }
+  }
+});
+
 document.addEventListener("DOMContentLoaded", function () {
   // Initialize authentication guard
   initializeAuthentication();
@@ -344,6 +395,19 @@ document.addEventListener("DOMContentLoaded", function () {
   if (document.getElementById("featuredProducts")) {
     loadFeaturedProducts();
   }
+
+  // Verificar y mostrar sección premium
+  checkAndShowPremiumSection();
+
+  updateCartCount();
+
+  // Cargar productos destacados en la página de inicio
+  if (document.getElementById("featuredProducts")) {
+    loadFeaturedProducts();
+  }
+
+  // Verificar y mostrar sección premium
+  checkAndShowPremiumSection();
 
   updateCartCount();
 });

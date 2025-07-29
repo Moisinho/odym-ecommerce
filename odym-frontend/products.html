@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/styles.css">
+    <script src="js/subscription.js"></script>
 </head>
 <body>
     <!-- Header -->
@@ -87,7 +88,7 @@
 
     <!-- Footer -->
     <div id="footer"></div>
-
+    
     <!-- Modales -->
     <div id="modals"></div>
     
@@ -117,6 +118,9 @@
             }
             if (typeof updateCartCount === 'function') {
               updateCartCount();
+            }
+            if (window.SubscriptionApp && typeof SubscriptionApp.initModal === 'function') {
+              SubscriptionApp.initModal();
             }
           }, 100);
         }).catch(error => {

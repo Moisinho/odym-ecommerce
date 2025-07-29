@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
 import { config } from 'dotenv';
+import { isPremiumUser, applyPremiumDiscount } from '../../services/subscription.service.js';
 
 config();
 
@@ -52,6 +53,16 @@ async function checkoutRoutes(fastify, options) {
         });
       }
 
+      // Verificar si el usuario es premium
+      let userIsPremium = false;
+      if (userId && userId !== 'guest') {
+        userIsPremium = await isPremiumUser(userId);
+      }
+      // Si no se detecta por ID, intenta por email
+      if (!userIsPremium && customerEmail) {
+        userIsPremium = await isPremiumUser(customerEmail);
+      }
+
       // Crear items para Stripe
       const line_items = [];
       let totalAmount = 0;
@@ -59,19 +70,25 @@ async function checkoutRoutes(fastify, options) {
       for (const item of items) {
         const product = products.find(p => p._id.toString() === item.productId);
         if (product) {
+          // Aplicar descuento premium si corresponde
+          let finalPrice = product.price;
+          if (userIsPremium) {
+            finalPrice = applyPremiumDiscount(product.price);
+          }
+
           const stripeItem = {
             price_data: {
               currency: 'usd',
               product_data: {
-                name: product.name,
+                name: product.name + (userIsPremium ? ' (Premium 30% OFF)' : ''),
                 description: product.description || 'Producto de ODYM',
               },
-              unit_amount: Math.round(product.price * 100),
+              unit_amount: Math.round(finalPrice * 100),
             },
             quantity: item.quantity,
           };
           line_items.push(stripeItem);
-          totalAmount += product.price * item.quantity;
+          totalAmount += finalPrice * item.quantity;
         }
       }
 
@@ -87,6 +104,8 @@ async function checkoutRoutes(fastify, options) {
           cart: JSON.stringify(items),
           userId: userId || 'guest',
           totalAmount: totalAmount.toString(),
+          isPremium: userIsPremium.toString(),
+          discountApplied: userIsPremium ? '30' : '0'
         }
       });
 
@@ -199,9 +218,16 @@ async function checkoutRoutes(fastify, options) {
 async function handleCheckoutSessionCompleted(session, fastify) {
   try {
     const metadata = session.metadata;
-    const items = JSON.parse(metadata.cart || '[]');
     const userId = metadata.userId || 'guest';
     const totalAmount = parseFloat(metadata.totalAmount || 0);
+
+    // Verificar si es una suscripción premium
+    if (metadata.type === 'premium_subscription') {
+      return await handlePremiumSubscriptionCompleted(session, fastify);
+    }
+
+    // Manejo normal de pedidos
+    const items = JSON.parse(metadata.cart || '[]');
 
     // Get product details
     const productIds = items.map(item => item.productId);
@@ -277,6 +303,41 @@ async function handleCheckoutSessionCompleted(session, fastify) {
 
   } catch (error) {
     console.error('❌ Error creating order:', error);
+    throw error;
+  }
+}
+
+// Función para manejar suscripciones premium completadas
+async function handlePremiumSubscriptionCompleted(session, fastify) {
+  try {
+    const metadata = session.metadata;
+    const userId = metadata.userId;
+
+    if (userId === 'guest' || !userId) {
+      throw new Error('User ID required for premium subscription');
+    }
+
+    // Activar suscripción premium
+    const { activatePremiumSubscription, getPremiumBoxProducts } = await import('../../services/subscription.service.js');
+    const updatedCustomer = await activatePremiumSubscription(userId);
+
+    // Obtener productos para la caja premium
+    console.log('🔔 Iniciando generación de caja premium para usuario', userId);
+    const boxProducts = await getPremiumBoxProducts();
+    console.log(`🔔 Productos seleccionados para la caja: ${boxProducts.length}`);
+
+    if (boxProducts.length > 0) {
+      // Crear orden utilizando el servicio centralizado para mantener la misma lógica que las compras regulares
+      const { createPremiumBoxOrder } = await import('../../services/order.service.js');
+      const boxOrder = await createPremiumBoxOrder(userId, boxProducts, session.payment_intent);
+
+      console.log(`📦 Orden de caja premium creada para usuario: ${userId}`);
+      return { subscription: updatedCustomer, boxOrder };
+    }
+
+    return { subscription: updatedCustomer };
+  } catch (error) {
+    console.error('❌ Error handling premium subscription:', error);
     throw error;
   }
 }

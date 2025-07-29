@@ -9,61 +9,129 @@
     const api = {
       getDistributors: async () => {
         try {
-          const response = await fetch('http://localhost:3000/api/distributors');
+          console.log('🔄 Obteniendo repartidores de tabla users...');
+          
+          // Get customers with delivery role
+          const response = await fetch('http://localhost:3000/api/customers');
           if (!response.ok) throw new Error('Could not fetch distributors');
+          
           const data = await response.json();
-          return Array.isArray(data) ? data : [];
+          const customers = data.customers || [];
+          console.log('📊 Total usuarios obtenidos:', customers.length);
+          console.log('👥 Usuarios por rol:', customers.map(c => `${c.name || c.fullName} (${c.role})`));
+          
+          // Filter only delivery users
+          const distributors = customers.filter(customer => customer.role === 'delivery');
+          console.log(`✅ Encontrados ${distributors.length} repartidores con role: 'delivery'`);
+          console.log('📋 Repartidores encontrados:', distributors);
+          
+          return distributors;
         } catch (error) {
-          console.error('Error fetching distributors:', error);
+          console.error('❌ Error fetching distributors:', error);
           return [];
         }
       },
       createDistributor: async (distributorData) => {
         try {
-          const response = await fetch('http://localhost:3000/api/distributors', {
+          console.log('🔄 Creando repartidor en tabla users...');
+          
+          // Create distributor as customer with delivery role
+          const distributorCustomerData = {
+            fullName: distributorData.fullName,
+            username: distributorData.username,
+            email: distributorData.email,
+            password: distributorData.password,
+            phone: distributorData.phone,
+            role: 'delivery', // ✅ Rol de repartidor
+            subscription: 'ODYM User', // Distributors get User subscription
+            address: distributorData.address || 'Delivery Address' // Default address if not provided
+          };
+
+          console.log('📝 Datos del repartidor a crear:', { ...distributorCustomerData, password: '[HIDDEN]' });
+
+          const response = await fetch('http://localhost:3000/api/users/admin-create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(distributorData),
+            body: JSON.stringify(distributorCustomerData),
           });
+          
           if (!response.ok) {
             const errorData = await response.json();
+            console.error('❌ Error del servidor:', errorData);
             throw new Error(errorData.error || 'Could not create distributor');
           }
-          return await response.json();
+          
+          const result = await response.json();
+          console.log('✅ Repartidor creado exitosamente en users con role: delivery');
+          return result;
         } catch (error) {
-          console.error('Error creating distributor:', error);
+          console.error('❌ Error creating distributor:', error);
           throw error;
         }
       },
       updateDistributor: async (distributorData) => {
         try {
-          const response = await fetch(`http://localhost:3000/api/distributors/${distributorData._id}`, {
+          console.log('🔄 Actualizando repartidor en tabla users...');
+          
+          // Update distributor as customer with delivery role
+          const distributorCustomerData = {
+            _id: distributorData._id,
+            fullName: distributorData.fullName,
+            username: distributorData.username,
+            email: distributorData.email,
+            phone: distributorData.phone,
+            role: 'delivery', // ✅ Mantener rol de repartidor
+            subscription: 'ODYM User', // Distributors get User subscription
+            address: distributorData.address || 'Delivery Address'
+          };
+
+          // Solo incluir password si se proporciona
+          if (distributorData.password && distributorData.password.trim() !== '') {
+            distributorCustomerData.password = distributorData.password;
+          }
+
+          console.log('📝 Datos del repartidor a actualizar:', { ...distributorCustomerData, password: distributorData.password ? '[UPDATED]' : '[UNCHANGED]' });
+
+          const response = await fetch(`http://localhost:3000/api/users/admin-update/${distributorData._id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(distributorData),
+            body: JSON.stringify(distributorCustomerData),
           });
+          
           if (!response.ok) {
             const errorData = await response.json();
+            console.error('❌ Error del servidor:', errorData);
             throw new Error(errorData.error || 'Could not update distributor');
           }
-          return await response.json();
+          
+          const result = await response.json();
+          console.log('✅ Repartidor actualizado exitosamente en users');
+          return result;
         } catch (error) {
-          console.error('Error updating distributor:', error);
+          console.error('❌ Error updating distributor:', error);
           throw error;
         }
       },
       deleteDistributor: async (distributorId) => {
         try {
-          const response = await fetch(`http://localhost:3000/api/distributors/${distributorId}`, {
+          console.log('🗑️ Eliminando repartidor de tabla users...');
+          
+          // Delete distributor from customers
+          const response = await fetch(`http://localhost:3000/api/customers/${distributorId}`, {
             method: 'DELETE',
           });
+          
           if (!response.ok) {
             const errorData = await response.json();
+            console.error('❌ Error del servidor:', errorData);
             throw new Error(errorData.error || 'Could not delete distributor');
           }
-          return await response.json();
+          
+          const result = await response.json();
+          console.log('✅ Repartidor eliminado exitosamente de users');
+          return result;
         } catch (error) {
-          console.error('Error deleting distributor:', error);
+          console.error('❌ Error deleting distributor:', error);
           throw error;
         }
       },
@@ -99,8 +167,9 @@
                   <i class="fas fa-motorcycle text-blue-600"></i>
                 </div>
                 <div class="text-left">
-                  <div class="text-sm font-medium text-gray-900 distributor-name">${distributor.fullName}</div>
-                  <div class="text-sm text-gray-500">@${distributor.username}</div>
+                  <div class="text-sm font-medium text-gray-900 distributor-name">${distributor.fullName || distributor.name || 'N/A'}</div>
+                  <div class="text-sm text-gray-500">@${distributor.username || distributor.name || 'N/A'}</div>
+                  <div class="text-xs text-green-600 font-semibold">Role: ${distributor.role}</div>
                 </div>
               </div>
             </td>
@@ -433,13 +502,18 @@
           if (e.target.closest('.editDistributorBtn')) {
             const row = e.target.closest('tr');
             const distributorId = row.dataset.distributorId;
+            const distributorNameElement = row.querySelector('.distributor-name');
+            const usernameElement = distributorNameElement.nextElementSibling;
+            
             const distributor = {
               _id: distributorId,
-              fullName: row.querySelector('.distributor-name').textContent,
-              username: row.querySelector('.distributor-name').nextElementSibling.textContent.replace('@', ''),
+              fullName: distributorNameElement.textContent,
+              username: usernameElement.textContent.replace('@', ''),
               email: row.querySelector('.distributor-email').textContent,
               phone: row.querySelector('.distributor-phone').textContent
             };
+            
+            console.log('✏️ Editando repartidor:', distributor);
             handlers.handleShowEditDistributorModal(distributor);
           }
 

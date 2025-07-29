@@ -132,17 +132,17 @@
 
       validateStep1: (data) => {
         let isValid = true;
-        
+
         if (!data.fullName) {
           methods.showError(htmlElements.fullNameError, 'Por favor ingrese su nombre completo');
           isValid = false;
         }
-        
+
         if (!data.username) {
           methods.showError(htmlElements.usernameError, 'Por favor ingrese un nombre de usuario');
           isValid = false;
         }
-        
+
         if (!data.email) {
           methods.showError(htmlElements.emailError, 'Por favor ingrese su correo electrónico');
           isValid = false;
@@ -199,6 +199,8 @@
         return re.test(email);
       },
 
+
+
       showStep1: () => {
         htmlElements.step2Form.classList.add('hidden');
         htmlElements.step1Form.classList.remove('hidden');
@@ -209,203 +211,185 @@
         htmlElements.step2Form.classList.remove('hidden');
       },
 
-      // Nueva función para hashear contraseñas
-      hashPassword: async (password) => {
+
+
+      registerUser: async (formData) => {
         try {
-          // Convertir la contraseña a un array de bytes
-          const msgBuffer = new TextEncoder().encode(password + "ODYM_SALT_2024");
-          
-          // Hashear usando SHA-256
-          const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-          
-          // Convertir el hash a string hexadecimal
-          const hashArray = Array.from(new Uint8Array(hashBuffer));
-          const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-          
-          return hashHex;
+          console.log('📝 Registrando usuario...');
+
+          // Enviar la contraseña en texto plano, sin hashear
+          const dataToSend = {
+            ...formData,
+            password: formData.password
+          };
+
+          const response = await fetch('http://localhost:3000/api/users/register', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(dataToSend)
+          });
+
+          let errorData;
+          try {
+            errorData = await response.json();
+          } catch (parseError) {
+            throw new Error('Error de conexión con el servidor');
+          }
+
+          if (!response.ok) {
+            console.error('❌ Error del servidor:', errorData);
+            throw new Error(errorData.error || errorData.message || 'Error en el registro');
+          }
+
+          console.log('✅ Usuario registrado exitosamente');
+          // Guardar datos del usuario y redirigir según el tipo
+          const user = errorData.customer || errorData.user;
+          methods.redirectUserByRole(user);
+
         } catch (error) {
-          console.error('Error al hashear la contraseña:', error);
-          throw error;
+          console.error('❌ Error al registrar usuario:', error);
+
+          const errorMessage = error.message.toLowerCase();
+
+          // Manejo específico de errores de duplicados
+          if (errorMessage.includes('duplicate') ||
+            errorMessage.includes('ya existe') ||
+            errorMessage.includes('already exists') ||
+            errorMessage.includes('username') ||
+            errorMessage.includes('email')) {
+
+            // Determinar si es error de username o email
+            if (errorMessage.includes('username') || errorMessage.includes('usuario')) {
+              methods.showError(htmlElements.usernameError, 'Este nombre de usuario ya está en uso. Por favor, elige otro.');
+            } else if (errorMessage.includes('email') || errorMessage.includes('correo')) {
+              methods.showError(htmlElements.emailError, 'Este correo electrónico ya está registrado. Por favor, usa otro.');
+            } else {
+              // Error genérico de duplicado
+              methods.showError(htmlElements.usernameError, 'El usuario o correo ya existe. Por favor, intenta con otros datos.');
+              methods.showError(htmlElements.emailError, 'Verifica que el correo no esté ya registrado.');
+            }
+
+            // Volver al paso 1 para que puedan corregir
+            methods.showStep1();
+
+          } else if (errorMessage.includes('connection') || errorMessage.includes('fetch')) {
+            // Error de conexión
+            methods.showError(htmlElements.passwordError, 'Error de conexión. Verifica que el servidor esté funcionando.');
+
+          } else {
+            // Otros errores
+            methods.showError(htmlElements.passwordError, error.message || 'Hubo un error al registrar el usuario. Por favor, intenta nuevamente.');
+          }
         }
       },
 
-registerUser: async (formData) => {
-  try {
-    console.log('📝 Registrando usuario...');
-    
-    // Enviar la contraseña en texto plano, sin hashear
-    const dataToSend = {
-      ...formData,
-      password: formData.password
-    };
 
-    const response = await fetch('http://localhost:3000/api/customers/register', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+      loginUser: async (loginData) => {
+        try {
+          console.log('🔐 Procesando login...');
+
+          // Regular login flow
+          const dataToSend = {
+            ...loginData,
+            password: loginData.password
+          };
+
+          const response = await fetch('http://localhost:3000/api/users/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(dataToSend)
+          });
+
+          let data;
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            data = await response.json();
+          } else {
+            const text = await response.text();
+            throw new Error('Respuesta inesperada del servidor: ' + text);
+          }
+
+          if (!response.ok) {
+            throw new Error(data.error || 'Error al iniciar sesión');
+          }
+
+          // Get user data and determine type based on role
+          const user = data.customer || data.user;
+          const userType = methods.getUserType(user);
+
+          console.log('✅ Usuario autenticado exitosamente');
+          console.log('👤 Tipo de usuario:', userType);
+          console.log('🎯 Rol en BD:', user.role);
+
+          // Redirect based on user type (determined by role in database)
+          methods.redirectUserByRole(user);
+        } catch (error) {
+          console.error('❌ Error al iniciar sesión:', error);
+          alert(error.message || 'Hubo un error al iniciar sesión. Por favor, intente nuevamente.');
+        }
       },
-      body: JSON.stringify(dataToSend)
-    });
-
-    let errorData;
-    try {
-      errorData = await response.json();
-    } catch (parseError) {
-      throw new Error('Error de conexión con el servidor');
-    }
-
-    if (!response.ok) {
-      console.error('❌ Error del servidor:', errorData);
-      throw new Error(errorData.error || errorData.message || 'Error en el registro');
-    }
-
-    console.log('✅ Usuario registrado exitosamente');
-    // Guardar datos del usuario y redirigir
-    AuthService.setUser(errorData.customer);
-    window.location.href = 'http://localhost:5500/odym-frontend/';
-    
-  } catch (error) {
-    console.error('❌ Error al registrar usuario:', error);
-    
-    const errorMessage = error.message.toLowerCase();
-    
-    // Manejo específico de errores de duplicados
-    if (errorMessage.includes('duplicate') || 
-        errorMessage.includes('ya existe') || 
-        errorMessage.includes('already exists') ||
-        errorMessage.includes('username') ||
-        errorMessage.includes('email')) {
-      
-      // Determinar si es error de username o email
-      if (errorMessage.includes('username') || errorMessage.includes('usuario')) {
-        methods.showError(htmlElements.usernameError, 'Este nombre de usuario ya está en uso. Por favor, elige otro.');
-      } else if (errorMessage.includes('email') || errorMessage.includes('correo')) {
-        methods.showError(htmlElements.emailError, 'Este correo electrónico ya está registrado. Por favor, usa otro.');
-      } else {
-        // Error genérico de duplicado
-        methods.showError(htmlElements.usernameError, 'El usuario o correo ya existe. Por favor, intenta con otros datos.');
-        methods.showError(htmlElements.emailError, 'Verifica que el correo no esté ya registrado.');
-      }
-      
-      // Volver al paso 1 para que puedan corregir
-      methods.showStep1();
-      
-    } else if (errorMessage.includes('connection') || errorMessage.includes('fetch')) {
-      // Error de conexión
-      methods.showError(htmlElements.passwordError, 'Error de conexión. Verifica que el servidor esté funcionando.');
-      
-    } else {
-      // Otros errores
-      methods.showError(htmlElements.passwordError, error.message || 'Hubo un error al registrar el usuario. Por favor, intenta nuevamente.');
-    }
-  }
-},
 
 
-loginUser: async (loginData) => {
-  try {
-    console.log('🔐 Procesando login...');
-    
-    // Check if this might be an admin login
-    const adminEmails = ['admin@odym.com', 'admin@admin.com', 'administrador@odym.com'];
-    const adminUsernames = ['admin', 'administrator', 'administrador'];
-    
-    const isLikelyAdmin = adminEmails.includes(loginData.identifier?.toLowerCase()) || 
-                         adminUsernames.includes(loginData.identifier?.toLowerCase());
+      // Función para detectar el tipo de usuario basado únicamente en el rol
+      getUserType: (user) => {
+        if (!user || !user.role) return 'user';
 
-    if (isLikelyAdmin && window.AdminLoginFix) {
-      // Use critical admin login fix
-      await AdminLoginFix.performAdminLogin(loginData.identifier, loginData.password);
-      return;
-    }
+        // Validación simple y limpia basada únicamente en el rol de la base de datos
+        switch (user.role.toLowerCase()) {
+          case 'admin':
+          case 'administrator':
+            return 'admin';
 
-    console.log('👤 Procesando login de usuario regular...');
+          case 'delivery':
+          case 'repartidor':
+            return 'delivery';
 
-    // Regular login flow
-    const dataToSend = {
-      ...loginData,
-      password: loginData.password
-    };
-
-    const response = await fetch('http://localhost:3000/api/customers/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+          default:
+            return 'user';
+        }
       },
-      body: JSON.stringify(dataToSend)
-    });
 
-    let data;
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
-      data = await response.json();
-    } else {
-      const text = await response.text();
-      throw new Error('Respuesta inesperada del servidor: ' + text);
-    }
-
-    if (!response.ok) {
-      throw new Error(data.error || 'Error al iniciar sesión');
-    }
-
-    // Check admin status as fallback
-    const isAdmin = methods.isAdminUser(data.customer);
-    
-    if (isAdmin) {
-      // Use AdminLoginFix if available, otherwise fallback
-      if (window.AdminLoginFix) {
-        await AdminLoginFix.performAdminLogin(loginData.identifier, loginData.password);
-        return;
-      } else {
-        // Fallback admin redirect
-        data.customer.isAdmin = true;
-        data.customer.type = 'admin';
-        data.customer.sessionType = 'admin';
-        localStorage.setItem('user', JSON.stringify(data.customer));
-        window.location.replace('http://localhost:5500/odym-frontend/admin/index.html?redirected=true');
-      }
-    } else {
-      console.log('👤 Usuario regular autenticado');
-      // Regular user
-      AuthService.setUser(data.customer);
-      AuthService.redirectAfterLogin(data.customer);
-    }
-  } catch (error) {
-    console.error('❌ Error al iniciar sesión:', error);
-    alert(error.message || 'Hubo un error al iniciar sesión. Por favor, intente nuevamente.');
-  }
-},
-
-
-      // Nueva función para detectar si un usuario es admin
+      // Función para detectar si un usuario es admin (mantener compatibilidad)
       isAdminUser: (user) => {
-        if (!user) return false;
-        
-        // Verificar diferentes formas de identificar un admin
-        const adminIdentifiers = [
-          // Por email
-          user.email === 'admin@odym.com',
-          user.email === 'admin@admin.com',
-          user.email === 'administrador@odym.com',
-          // Por username
-          user.username === 'admin',
-          user.username === 'administrator',
-          user.username === 'administrador',
-          // Por rol si existe
-          user.role === 'admin',
-          user.role === 'administrator',
-          // Por tipo de usuario
-          user.userType === 'admin',
-          user.type === 'admin',
-          // Por propiedad isAdmin
-          user.isAdmin === true,
-          // Por subscription/plan
-          user.subscription === 'admin',
-          user.subscription === 'ADMIN',
-          user.plan === 'admin'
-        ];
-        
-        return adminIdentifiers.some(condition => condition === true);
+        return methods.getUserType(user) === 'admin';
+      },
+
+      // Función para redirigir según el tipo de usuario
+      redirectUserByRole: (user) => {
+        const userType = methods.getUserType(user);
+
+        console.log(`🔄 Redirigiendo usuario tipo: ${userType}`);
+
+        switch (userType) {
+          case 'admin':
+            console.log('👑 Redirigiendo a dashboard de admin');
+            user.isAdmin = true;
+            user.type = 'admin';
+            user.sessionType = 'admin';
+            localStorage.setItem('user', JSON.stringify(user));
+            window.location.replace('http://localhost:5500/odym-frontend/admin/index.html?redirected=true');
+            break;
+
+          case 'delivery':
+            console.log('🚚 Redirigiendo a dashboard de delivery');
+            user.type = 'delivery';
+            user.sessionType = 'delivery';
+            localStorage.setItem('user', JSON.stringify(user));
+            window.location.replace('http://localhost:5500/odym-frontend/delivery/index.html?redirected=true');
+            break;
+
+          default:
+            console.log('👤 Redirigiendo a dashboard de usuario');
+            user.type = 'user';
+            user.sessionType = 'user';
+            AuthService.setUser(user);
+            window.location.href = 'http://localhost:5500/odym-frontend/';
+            break;
+        }
       },
 
       /**
@@ -422,38 +406,40 @@ loginUser: async (loginData) => {
           localStorage.removeItem('cart');
           sessionStorage.clear();
         }
-        
+
         // Emitir evento de cambio de autenticación
         window.dispatchEvent(new Event('auth-change'));
         window.location.href = 'http://localhost:5500/odym-frontend/auth/login.html';
       }
     }
 
-  return {
-    init: () => {
-      // Verificar si ya hay un usuario autenticado al cargar login.html
-      if (window.location.pathname.includes('login.html')) {
-        const user = AuthService.getUser();
-        if (user) {
-          // Si ya está autenticado, redirigir según el rol
-          AuthService.redirectAfterLogin(user);
-          return; // Salir para evitar inicializar el formulario
+    return {
+      init: () => {
+        // Verificar si ya hay un usuario autenticado al cargar login.html
+        if (window.location.pathname.includes('login.html')) {
+          const user = AuthService.getUser();
+          if (user) {
+            // Si ya está autenticado, redirigir según el rol
+            AuthService.redirectAfterLogin(user);
+            return; // Salir para evitar inicializar el formulario
+          }
+        }
+
+        // Initialize registration form if present
+        if (htmlElements.step1Form && htmlElements.step2Form) {
+          htmlElements.step1Form.addEventListener('submit', handlers.handleStep1);
+          htmlElements.step2Form.addEventListener('submit', handlers.handleStep2);
+          htmlElements.prevBtn.addEventListener('click', handlers.handlePrev);
+
+
+        }
+
+        // Initialize login form if present
+        if (htmlElements.loginForm) {
+          htmlElements.loginForm.addEventListener('submit', handlers.handleLogin);
         }
       }
-
-      // Initialize registration form if present
-      if (htmlElements.step1Form && htmlElements.step2Form) {
-        htmlElements.step1Form.addEventListener('submit', handlers.handleStep1);
-        htmlElements.step2Form.addEventListener('submit', handlers.handleStep2);
-        htmlElements.prevBtn.addEventListener('click', handlers.handlePrev);
-      }
-      
-      // Initialize login form if present
-      if (htmlElements.loginForm) {
-        htmlElements.loginForm.addEventListener('submit', handlers.handleLogin);
-      }
     }
-  }
 
   })();
 

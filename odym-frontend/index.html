@@ -90,6 +90,52 @@
             </div>
         </section>
 
+        <!-- Sección Premium -->
+        <section id="premium-section" class="bg-gradient-to-r from-yellow-400 to-orange-500 py-16 mb-16" style="display: none;">
+            <div class="container mx-auto px-4 text-center">
+                <div class="max-w-4xl mx-auto">
+                    <h2 class="text-4xl font-bold text-white mb-4">🌟 ¡Hazte Premium!</h2>
+                    <p class="text-xl text-white mb-8">Obtén 30% de descuento en todos los productos + Caja mensual de productos</p>
+                    
+                    <div class="bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl p-8 mb-8">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-white">
+                            <div class="flex flex-col items-center">
+                                <div class="bg-white bg-opacity-30 rounded-full p-4 mb-4">
+                                    <i class="fas fa-percentage text-3xl"></i>
+                                </div>
+                                <h3 class="font-bold text-lg mb-2">30% de Descuento</h3>
+                                <p class="text-sm opacity-90">En todos los productos de la tienda</p>
+                            </div>
+                            <div class="flex flex-col items-center">
+                                <div class="bg-white bg-opacity-30 rounded-full p-4 mb-4">
+                                    <i class="fas fa-gift text-3xl"></i>
+                                </div>
+                                <h3 class="font-bold text-lg mb-2">Caja Mensual</h3>
+                                <p class="text-sm opacity-90">Productos sorpresa cada mes</p>
+                            </div>
+                            <div class="flex flex-col items-center">
+                                <div class="bg-white bg-opacity-30 rounded-full p-4 mb-4">
+                                    <i class="fas fa-crown text-3xl"></i>
+                                </div>
+                                <h3 class="font-bold text-lg mb-2">Acceso Premium</h3>
+                                <p class="text-sm opacity-90">Soporte prioritario 24/7</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                        <div class="text-white">
+                            <span class="text-3xl font-bold">$30</span>
+                            <span class="text-lg opacity-90">/mes</span>
+                        </div>
+                        <a href="subscription.html" class="bg-white text-orange-600 font-bold py-3 px-8 rounded-full hover:bg-gray-100 transition duration-300 shadow-lg">
+                            ¡Suscribirse Ahora!
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- Productos más comprados -->
         <section class="container mx-auto px-4 mb-16">
             <h2 class="text-3xl font-bold text-center mb-10">PRODUCTOS DESTACADOS</h2>
@@ -118,11 +164,13 @@
 
     <script src="js/products.js"></script>
     <script src="js/cart-global.js"></script>
+    <script src="js/subscription.js"></script>
+
     
-    <script src="js/index-products.js"></script>
-    <script src="js/products-api.js"></script>
-    <script src="js/main.js"></script>
-    <script src="assets/js/auth-service.js"></script>
+    <script src="js/index-products.js" defer></script>
+    <script src="js/products-api.js" defer></script>
+    <script src="js/main.js" defer></script>
+    <script src="assets/js/auth-service.js" defer></script>
     <script>
         // Cargar todos los partials y luego inicializar
         Promise.all([
@@ -136,6 +184,55 @@
       
           // Inicializar después de cargar los modales
           setTimeout(() => {
+            // Initialize premium modal functionality
+            const premiumModal = document.getElementById('premiumModal');
+            const closePremiumModalBtn = document.getElementById('closePremiumModalBtn');
+            const subscribePremiumBtn = document.getElementById('subscribePremiumBtn');
+
+            function openPremiumModal() {
+                if (premiumModal) {
+                    premiumModal.style.display = 'flex';
+                    document.body.style.overflow = 'hidden';
+                    console.log('Premium modal opened');
+                }
+            }
+
+            function closePremiumModal() {
+                if (premiumModal) {
+                    premiumModal.style.display = 'none';
+                    document.body.style.overflow = 'auto';
+                    console.log('Premium modal closed');
+                }
+            }
+
+            if (closePremiumModalBtn) {
+                closePremiumModalBtn.addEventListener('click', closePremiumModal);
+            }
+
+            if (subscribePremiumBtn) {
+                subscribePremiumBtn.addEventListener('click', () => {
+                    console.log('Subscribe button clicked');
+                    if (typeof SubscriptionApp !== 'undefined' && typeof SubscriptionApp.simulateSubscription === 'function') {
+                        SubscriptionApp.simulateSubscription();
+                    } else {
+                        alert('Error: La función de suscripción no está disponible.');
+                        console.error('SubscriptionApp or simulateSubscription is not defined.');
+                    }
+                });
+            }
+
+            window.openPremiumModal = openPremiumModal;
+            window.closePremiumModal = closePremiumModal;
+
+            if (premiumModal) {
+                premiumModal.addEventListener('click', (e) => {
+                    if (e.target === premiumModal) {
+                        closePremiumModal();
+                    }
+                });
+            }
+
+            // Original initializations
             if (typeof AuthService !== 'undefined') {
               AuthService.init();
             }

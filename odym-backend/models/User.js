@@ -7,6 +7,12 @@ const userSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  username: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true
+  },
   email: {
     type: String,
     required: true,
@@ -34,6 +40,10 @@ const userSchema = new mongoose.Schema({
   postalCode: {
     type: String,
     trim: true
+  },
+  subscription: {
+    type: String,
+    default: '', // 'ODYM User', 'ODYM God', etc. Only meaningful for users
   },
   role: {
     type: String,

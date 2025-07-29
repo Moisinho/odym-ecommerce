@@ -12,16 +12,16 @@
           console.log('🔄 Fetching subscriptions from API...');
           const response = await fetch('http://localhost:3000/api/subscriptions');
           console.log('📡 Response status:', response.status);
-          
+
           if (!response.ok) {
             console.error('❌ Response not OK:', response.status, response.statusText);
             throw new Error(`Could not fetch subscriptions: ${response.status} ${response.statusText}`);
           }
-          
+
           const data = await response.json();
           console.log('📋 Raw API response:', data);
           console.log('📊 Data type:', typeof data, 'Is array:', Array.isArray(data));
-          
+
           return Array.isArray(data) ? data : [];
         } catch (error) {
           console.error('❌ Error fetching subscriptions:', error);
@@ -371,7 +371,7 @@
         if (htmlElements.subscriptionForm) {
           htmlElements.subscriptionForm.removeEventListener('submit', handlers.handleFormSubmit);
           htmlElements.subscriptionForm.addEventListener('submit', handlers.handleFormSubmit);
-          
+
           // Add event listener for subscription type change
           const tipoSelect = htmlElements.subscriptionForm.querySelector('select[name="subscriptionType"]');
           if (tipoSelect) {
@@ -397,7 +397,7 @@
       handleSubscriptionTypeChange: (e) => {
         const selectedType = e.target.value;
         const form = htmlElements.subscriptionForm;
-        
+
         if (selectedType === 'God') {
           form.price.value = 30;
           form.duration.value = '1 month';

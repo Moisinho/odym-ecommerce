@@ -38,6 +38,22 @@
         window.location.href = `${BASE_URL}/auth/login.html`;
       },
 
+      updatePremiumLinks: (user) => {
+        const premiumNavLink = document.getElementById('premium-nav-link');
+        const premiumMobileLink = document.getElementById('premium-mobile-link');
+        
+        const isPremiumUser = user && ['God', 'ODYM God'].includes(user.subscription);
+        if (user && !isPremiumUser) {
+          // Mostrar enlaces premium para usuarios no premium
+          if (premiumNavLink) premiumNavLink.style.display = 'flex';
+          if (premiumMobileLink) premiumMobileLink.style.display = 'block';
+        } else {
+          // Ocultar enlaces premium para usuarios premium o no logueados
+          if (premiumNavLink) premiumNavLink.style.display = 'none';
+          if (premiumMobileLink) premiumMobileLink.style.display = 'none';
+        }
+      },
+
       checkAuth: () => {
         const publicPages = [
           "/auth/login.html",
@@ -279,6 +295,16 @@
             if (cartBtn) cartBtn.style.display = "";
             if (userBtn) userBtn.style.display = "";
 
+            // Verificar si es usuario premium
+            const isPremium = ['God', 'ODYM God'].includes(user.subscription);
+            let premiumInfo = '';
+            if (isPremium) {
+              const created = new Date(user.createdAt);
+              const daysUsed = Math.floor((Date.now() - created.getTime()) / (1000 * 60 * 60 * 24));
+              const daysLeft = Math.max(0, 30 - daysUsed);
+              premiumInfo = `<div class="text-xs text-yellow-600 font-bold"><i class="fas fa-crown mr-1"></i>Premium (${daysLeft} días restantes)</div>`;
+            }
+
             // Mostrar menú de usuario
             if (userMenu) {
               userMenu.innerHTML = `
@@ -287,6 +313,7 @@
                 }</div>
                   <div class="text-xs text-gray-500">${user.email || "Sin email"
                 }</div>
+                  ${premiumInfo}
                 </div>
                 <a href="profile.html" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
                   <i class="fas fa-user mr-2"></i>Mi Perfil
@@ -294,6 +321,11 @@
                 <a href="orders.html" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
                   <i class="fas fa-shopping-bag mr-2"></i>Mis Pedidos
                 </a>
+                ${!isPremium ? `
+                <a href="#" class="block px-4 py-2 text-yellow-600 hover:bg-yellow-50 font-bold premium-modal-trigger" onclick="openPremiumModal();">
+                  <i class="fas fa-crown mr-2"></i>Hazte Premium
+                </a>
+                ` : ''}
                 <button id="logoutBtn" class="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100">
                   <i class="fas fa-sign-out-alt mr-2"></i>Cerrar sesión
                 </button>
@@ -302,6 +334,9 @@
             } else {
               console.error("❌ No se encontró el elemento userMenu");
             }
+
+            // Mostrar/ocultar enlaces premium en navegación
+            methods.updatePremiumLinks(user);
 
             // Remover botón de login si existe
             const loginBtn = document.querySelector(".login-button");
@@ -335,6 +370,9 @@
             if (userMenu) {
               userMenu.innerHTML = "";
             }
+
+            // Ocultar enlaces premium para usuarios no autenticados
+            methods.updatePremiumLinks(null);
           }
         }
 

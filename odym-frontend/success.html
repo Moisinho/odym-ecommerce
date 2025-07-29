@@ -44,13 +44,17 @@
     <script src="assets/js/auth-service.js"></script>
     <script src="js/cart-global.js"></script>
     
+    <script src="js/subscription.js"></script>
     <script>
-        // Obtener session_id de la URL
+        // Obtener parámetros de la URL
         const urlParams = new URLSearchParams(window.location.search);
         const sessionId = urlParams.get('session_id');
+        const type = urlParams.get('type');
         
-        // Limpiar carrito después de compra exitosa
-        localStorage.removeItem('cart');
+        // Limpiar carrito después de compra exitosa (solo para pedidos normales)
+        if (type !== 'subscription') {
+            localStorage.removeItem('cart');
+        }
         
         // Cargar header y footer con inicialización completa
         Promise.all([
@@ -84,6 +88,12 @@
                     <h3 class="font-semibold mb-2">Detalles del pedido:</h3>
                     <p class="text-sm text-gray-600">ID de sesión: No disponible</p>
                 `;
+                return;
+            }
+
+            // Si es una suscripción, manejar diferente
+            if (type === 'subscription') {
+                await handleSubscriptionSuccess();
                 return;
             }
 
@@ -183,6 +193,83 @@
                     </div>
                 </div>
             `;
+        }
+
+        // Función para manejar éxito de suscripción
+        async function handleSubscriptionSuccess() {
+            try {
+                const user = JSON.parse(localStorage.getItem('user'));
+                if (!user) {
+                    window.location.href = 'auth/login.html';
+                    return;
+                }
+
+                // Activar la suscripción
+                const response = await fetch('http://localhost:3000/api/subscriptions/premium/activate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        userId: user._id,
+                        sessionId: sessionId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Actualizar datos del usuario en localStorage
+                    const updatedUser = { ...user, subscription: 'God' };
+                    localStorage.setItem('user', JSON.stringify(updatedUser));
+                    
+                    // Mostrar detalles de la suscripción
+                    document.getElementById('orderDetails').innerHTML = `
+                        <div class="bg-gradient-to-r from-yellow-100 to-orange-100 rounded-lg p-6">
+                            <h3 class="font-semibold mb-4 text-lg text-orange-800">¡Suscripción Premium Activada!</h3>
+                            <div class="text-left space-y-3">
+                                <div class="flex items-center">
+                                    <i class="fas fa-crown text-yellow-500 mr-2"></i>
+                                    <span class="text-sm">Suscripción Premium ODYM</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-calendar text-blue-500 mr-2"></i>
+                                    <span class="text-sm">Duración: 1 mes</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-dollar-sign text-green-500 mr-2"></i>
+                                    <span class="text-sm">30% de descuento en todos los productos</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-gift text-purple-500 mr-2"></i>
+                                    <span class="text-sm">Caja de productos mensual incluida</span>
+                                </div>
+                                ${data.boxProducts > 0 ? `
+                                <div class="mt-4 p-3 bg-white rounded border">
+                                    <p class="text-sm font-medium">📦 Tu caja de productos está siendo preparada</p>
+                                    <p class="text-xs text-gray-600">Recibirás ${data.boxProducts} productos seleccionados</p>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+
+                    // Cambiar el título y mensaje
+                    document.querySelector('h1').textContent = '¡Suscripción Activada!';
+                    document.querySelector('main p').textContent = 'Tu suscripción premium ha sido activada exitosamente. Ya puedes disfrutar de todos los beneficios.';
+                } else {
+                    throw new Error(data.error || 'Error al activar suscripción');
+                }
+            } catch (error) {
+                console.error('Error handling subscription success:', error);
+                document.getElementById('orderDetails').innerHTML = `
+                    <div class="bg-red-100 rounded-lg p-4">
+                        <h3 class="font-semibold mb-2 text-red-800">Error al activar suscripción</h3>
+                        <p class="text-sm text-red-600">${error.message}</p>
+                        <p class="text-xs text-gray-600 mt-2">Por favor, contacta con soporte técnico.</p>
+                    </div>
+                `;
+            }
         }
 
         // Ejecutar cuando el DOM esté listo

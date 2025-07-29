@@ -221,35 +221,52 @@ function logout() {
 
 // Cargar modales desde archivo externo
 function loadModals() {
-    fetch('modals.html')
-        .then(response => response.text())
-        .then(html => {
-            document.getElementById('modals-container').innerHTML = html;
-            setupModals();
-        });
+    const modalsContainer = document.getElementById('modals-container');
+    
+    // Solo cargar modales si el contenedor existe
+    if (modalsContainer) {
+        fetch('modals.html')
+            .then(response => response.text())
+            .then(html => {
+                modalsContainer.innerHTML = html;
+                setupModals();
+            })
+            .catch(error => {
+                console.log('ℹ️ No se pudieron cargar los modales (normal en algunas páginas):', error.message);
+            });
+    } else {
+        console.log('ℹ️ No hay contenedor de modales en esta página');
+    }
 }
 
 // Configurar eventos
 function setupEvents() {
     // Toggle sidebar
-    document.getElementById('sidebarToggle')?.addEventListener('click', function() {
-        const sidebar = document.getElementById('sidebar');
-        const content = document.querySelector('.flex-1');
-        
-        if (sidebarOpen) {
-            sidebar.style.transform = 'translateX(-100%)';
-            content.style.marginLeft = '0';
-        } else {
-            sidebar.style.transform = 'translateX(0)';
-            content.style.marginLeft = '16rem';
-        }
-        
-        sidebarOpen = !sidebarOpen;
-    });
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', function() {
+            const sidebar = document.getElementById('sidebar');
+            const content = document.querySelector('.flex-1');
+            
+            if (sidebar && content) {
+                if (sidebarOpen) {
+                    sidebar.style.transform = 'translateX(-100%)';
+                    content.style.marginLeft = '0';
+                } else {
+                    sidebar.style.transform = 'translateX(0)';
+                    content.style.marginLeft = '16rem';
+                }
+                
+                sidebarOpen = !sidebarOpen;
+            }
+        });
+    }
     
     // Resaltar elemento activo en el sidebar
     const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-    document.querySelectorAll('.sidebar-link').forEach(link => {
+    const sidebarLinks = document.querySelectorAll('.sidebar-link');
+    
+    sidebarLinks.forEach(link => {
         if (link.getAttribute('href') === currentPage) {
             link.classList.add('active');
         } else {

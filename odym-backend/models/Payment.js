@@ -13,13 +13,10 @@ const paymentSchema = new mongoose.Schema({
   },
   stripeSessionId: {
     type: String,
-    required: true,
-    unique: true
+    required: true
   },
   stripePaymentIntentId: {
-    type: String,
-    unique: true,
-    sparse: true
+    type: String
   },
   amount: {
     type: Number,
@@ -83,8 +80,8 @@ const paymentSchema = new mongoose.Schema({
 // Indexes for better query performance
 paymentSchema.index({ orderId: 1 });
 paymentSchema.index({ userId: 1 });
-paymentSchema.index({ stripeSessionId: 1 });
-paymentSchema.index({ stripePaymentIntentId: 1 });
+paymentSchema.index({ stripeSessionId: 1 }, { unique: true });
+paymentSchema.index({ stripePaymentIntentId: 1 }, { unique: true, sparse: true });
 paymentSchema.index({ status: 1 });
 paymentSchema.index({ createdAt: -1 });
 

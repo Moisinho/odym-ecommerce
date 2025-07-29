@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const orderSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Customer",
+    ref: "User",
     required: true,
   },
   items: [
@@ -31,10 +31,19 @@ const orderSchema = new mongoose.Schema({
     default: "pending",
   },
   paymentIntentId: { type: String },
+  orderType: {
+    type: String,
+    enum: ["regular", "premium_box"],
+    default: "regular"
+  },
   shippingAddress: {
     firstName: { type: String, default: "Cliente" },
     lastName: { type: String, default: "" },
     email: { type: String, required: true },
+    phone: { type: String, default: "" },
+    address: { type: String, default: "" },
+    city: { type: String, default: "" },
+    postalCode: { type: String, default: "" },
     country: { type: String, default: "" },
   },
   createdAt: { type: Date, default: Date.now },

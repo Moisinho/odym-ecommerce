@@ -4,22 +4,13 @@ let currentPage = 1;
 let totalPages = 1;
 const itemsPerPage = 10;
 
-// Inicialización
-document.addEventListener('DOMContentLoaded', function() {
-    if (preventDualLoading()) {
-        return;
-    }
-    
-    setTimeout(() => {
-        checkAdminAuth();
-        loadOrders();
-        setupEventListeners();
-    }, 300);
-});
+// La inicialización ahora se maneja desde el HTML inline script
+// Esta función se llama desde el script inline después de verificar la autenticación
 
 // Cargar pedidos desde el backend
 async function loadOrders(page = 1, filters = {}) {
     try {
+        console.log('📦 Cargando pedidos...', { page, filters });
         showLoading(true);
         
         let url = `http://localhost:3000/api/orders?page=${page}&limit=${itemsPerPage}`;
@@ -29,23 +20,38 @@ async function loadOrders(page = 1, filters = {}) {
         if (filters.search) url += `&search=${encodeURIComponent(filters.search)}`;
         if (filters.date) url += `&date=${filters.date}`;
         
+        console.log('🌐 Haciendo petición a:', url);
+        
         const response = await fetch(url);
+        console.log('📡 Respuesta recibida:', response.status, response.statusText);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
         const data = await response.json();
+        console.log('📊 Datos recibidos:', data);
         
         if (data.success) {
-            orders = data.orders;
-            currentPage = data.pagination.currentPage;
-            totalPages = data.pagination.totalPages;
+            orders = data.orders || [];
+            currentPage = data.pagination?.currentPage || 1;
+            totalPages = data.pagination?.totalPages || 1;
+            
+            console.log('✅ Pedidos cargados:', orders.length);
             
             renderOrdersTable();
             updatePagination();
-            updateShowingInfo(data.pagination);
+            updateShowingInfo(data.pagination || { showingFrom: 0, showingTo: 0, totalItems: 0 });
         } else {
             throw new Error(data.error || 'Error al cargar pedidos');
         }
     } catch (error) {
-        console.error('Error:', error);
+        console.error('❌ Error cargando pedidos:', error);
         showNotification('Error al cargar pedidos: ' + error.message, 'error');
+        
+        // Mostrar tabla vacía en caso de error
+        orders = [];
+        renderOrdersTable();
     } finally {
         showLoading(false);
     }
@@ -79,7 +85,7 @@ function createOrderRow(order) {
     const tr = document.createElement('tr');
     tr.className = 'hover:bg-gray-50';
     
-    const customerName = order.userId?.fullName || 'Cliente Invitado';
+    const customerName = order.userId?.name || 'Cliente Invitado';
     const customerEmail = order.userId?.email || 'N/A';
     const itemCount = order.items.reduce((total, item) => total + item.quantity, 0);
     
@@ -159,7 +165,15 @@ async function showOrderDetails(orderId) {
         if (data.success) {
             const order = data.order;
             renderOrderDetails(order);
-            document.getElementById('orderDetailsModal').classList.remove('hidden');
+            const modal = document.getElementById('orderDetailsModal');
+            modal.classList.remove('hidden');
+            
+            // Agregar event listener para cerrar al hacer clic fuera
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeOrderDetailsModal();
+                }
+            });
         } else {
             throw new Error(data.error || 'Error al cargar detalles');
         }
@@ -173,7 +187,7 @@ async function showOrderDetails(orderId) {
 function renderOrderDetails(order) {
     const content = document.getElementById('orderDetailsContent');
     
-    const customerName = order.userId?.fullName || 'Cliente Invitado';
+    const customerName = order.userId?.name || 'Cliente Invitado';
     const customerEmail = order.userId?.email || 'N/A';
     const customerPhone = order.userId?.phone || 'N/A';
     const customerAddress = order.userId?.address || order.shippingAddress || 'No especificada';
@@ -254,6 +268,7 @@ function updateOrderStatus(orderId, currentStatus) {
     ];
     
     const modal = document.createElement('div');
+    modal.id = 'statusUpdateModal';
     modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50';
     modal.innerHTML = `
         <div class="flex items-center justify-center min-h-screen p-4">
@@ -271,7 +286,7 @@ function updateOrderStatus(orderId, currentStatus) {
                         `).join('')}
                     </div>
                     <div class="mt-6 flex justify-end space-x-3">
-                        <button onclick="this.parentElement.parentElement.parentElement.parentElement.remove()" 
+                        <button onclick="closeStatusModal()" 
                                 class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
                             Cancelar
                         </button>
@@ -284,6 +299,13 @@ function updateOrderStatus(orderId, currentStatus) {
             </div>
         </div>
     `;
+    
+    // Cerrar modal al hacer clic fuera
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeStatusModal();
+        }
+    });
     
     document.body.appendChild(modal);
 }
@@ -311,7 +333,7 @@ async function confirmStatusUpdate(orderId) {
         if (data.success) {
             showNotification('Estado actualizado correctamente', 'success');
             loadOrders(currentPage);
-            document.querySelector('.fixed.inset-0.bg-gray-600').remove();
+            closeStatusModal();
             closeOrderDetailsModal();
         } else {
             throw new Error(data.error || 'Error al actualizar estado');
@@ -322,9 +344,20 @@ async function confirmStatusUpdate(orderId) {
     }
 }
 
+// Cerrar modal de actualización de estado
+function closeStatusModal() {
+    const modal = document.getElementById('statusUpdateModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
 // Cerrar modal de detalles
 function closeOrderDetailsModal() {
-    document.getElementById('orderDetailsModal').classList.add('hidden');
+    const modal = document.getElementById('orderDetailsModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
 }
 
 // Configurar event listeners
@@ -341,6 +374,14 @@ function setupEventListeners() {
     document.getElementById('nextPage').addEventListener('click', () => changePage(1));
     document.getElementById('prevPageMobile').addEventListener('click', () => changePage(-1));
     document.getElementById('nextPageMobile').addEventListener('click', () => changePage(1));
+    
+    // Cerrar modales con tecla Escape
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeOrderDetailsModal();
+            closeStatusModal();
+        }
+    });
 }
 
 // Aplicar filtros
@@ -413,3 +454,5 @@ function showNotification(message, type = 'success') {
         notification.remove();
     }, 3000);
 }
+
+// Las funciones de autenticación se manejan en admin-common.js

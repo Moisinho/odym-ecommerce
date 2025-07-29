@@ -9,81 +9,129 @@
     const api = {
       getAdmins: async () => {
         try {
+          console.log('🔄 Obteniendo administradores de tabla users...');
+          
           // Get customers with admin role
           const response = await fetch('http://localhost:3000/api/customers');
           if (!response.ok) throw new Error('Could not fetch admins');
+          
           const data = await response.json();
           const customers = data.customers || [];
+          console.log('📊 Total usuarios obtenidos:', customers.length);
+          console.log('👥 Usuarios por rol:', customers.map(c => `${c.name || c.fullName} (${c.role})`));
+          
           // Filter only admin users
-          return customers.filter(customer => customer.role === 'admin');
+          const admins = customers.filter(customer => customer.role === 'admin');
+          console.log(`✅ Encontrados ${admins.length} administradores con role: 'admin'`);
+          console.log('📋 Administradores encontrados:', admins);
+          
+          return admins;
         } catch (error) {
-          console.error('Error fetching admins:', error);
+          console.error('❌ Error fetching admins:', error);
           return [];
         }
       },
       createAdmin: async (adminData) => {
         try {
+          console.log('🔄 Creando administrador en tabla customers...');
+          
           // Create admin as customer with admin role
           const adminCustomerData = {
-            ...adminData,
-            role: 'admin',
+            fullName: adminData.fullName,
+            username: adminData.username,
+            email: adminData.email,
+            password: adminData.password,
+            role: 'admin', // ✅ Rol de administrador
             subscription: 'ODYM God', // Admins get God subscription
             phone: adminData.phone || '000-000-0000', // Default phone if not provided
             address: adminData.address || 'Admin Address' // Default address if not provided
           };
 
-          const response = await fetch('http://localhost:3000/api/customers', {
+          console.log('📝 Datos del admin a crear:', { ...adminCustomerData, password: '[HIDDEN]' });
+
+          const response = await fetch('http://localhost:3000/api/users/admin-create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(adminCustomerData),
           });
+          
           if (!response.ok) {
             const errorData = await response.json();
+            console.error('❌ Error del servidor:', errorData);
             throw new Error(errorData.error || 'Could not create admin');
           }
-          return await response.json();
+          
+          const result = await response.json();
+          console.log('✅ Administrador creado exitosamente en customers con role: admin');
+          return result;
         } catch (error) {
-          console.error('Error creating admin:', error);
+          console.error('❌ Error creating admin:', error);
           throw error;
         }
       },
       updateAdmin: async (adminData) => {
         try {
+          console.log('🔄 Actualizando administrador en tabla customers...');
+          
           // Update admin as customer with admin role
           const adminCustomerData = {
-            ...adminData,
-            role: 'admin',
-            subscription: 'ODYM God' // Admins get God subscription
+            _id: adminData._id,
+            fullName: adminData.fullName,
+            username: adminData.username,
+            email: adminData.email,
+            role: 'admin', // ✅ Mantener rol de administrador
+            subscription: 'ODYM God', // Admins get God subscription
+            phone: adminData.phone || '000-000-0000',
+            address: adminData.address || 'Admin Address'
           };
 
-          const response = await fetch(`http://localhost:3000/api/customers/${adminData._id}`, {
+          // Solo incluir password si se proporciona
+          if (adminData.password && adminData.password.trim() !== '') {
+            adminCustomerData.password = adminData.password;
+          }
+
+          console.log('📝 Datos del admin a actualizar:', { ...adminCustomerData, password: adminData.password ? '[UPDATED]' : '[UNCHANGED]' });
+
+          const response = await fetch(`http://localhost:3000/api/users/admin-update/${adminData._id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(adminCustomerData),
           });
+          
           if (!response.ok) {
             const errorData = await response.json();
+            console.error('❌ Error del servidor:', errorData);
             throw new Error(errorData.error || 'Could not update admin');
           }
-          return await response.json();
+          
+          const result = await response.json();
+          console.log('✅ Administrador actualizado exitosamente en customers');
+          return result;
         } catch (error) {
-          console.error('Error updating admin:', error);
+          console.error('❌ Error updating admin:', error);
           throw error;
         }
       },
       deleteAdmin: async (adminId) => {
         try {
+          console.log('🗑️ Eliminando administrador de tabla customers...');
+          
           // Delete admin from customers
           const response = await fetch(`http://localhost:3000/api/customers/${adminId}`, {
             method: 'DELETE',
           });
+          
           if (!response.ok) {
             const errorData = await response.json();
+            console.error('❌ Error del servidor:', errorData);
             throw new Error(errorData.error || 'Could not delete admin');
           }
-          return await response.json();
+          
+          const result = await response.json();
+          console.log('✅ Administrador eliminado exitosamente de customers');
+          return result;
         } catch (error) {
-          console.error('Error deleting admin:', error);
+          console.error('❌ Error deleting admin:', error);
           throw error;
         }
       },
@@ -119,8 +167,9 @@
                   <i class="fas fa-user-shield text-red-600"></i>
                 </div>
                 <div class="text-left">
-                  <div class="text-sm font-medium text-gray-900 admin-name">${admin.fullName}</div>
-                  <div class="text-sm text-gray-500">@${admin.username}</div>
+                  <div class="text-sm font-medium text-gray-900 admin-name">${admin.fullName || admin.name || 'N/A'}</div>
+                  <div class="text-sm text-gray-500">@${admin.username || admin.name || 'N/A'}</div>
+                  <div class="text-xs text-blue-600 font-semibold">Role: ${admin.role}</div>
                 </div>
               </div>
             </td>
@@ -406,12 +455,17 @@
           if (e.target.closest('.editAdminBtn')) {
             const row = e.target.closest('tr');
             const adminId = row.dataset.adminId;
+            const adminNameElement = row.querySelector('.admin-name');
+            const usernameElement = adminNameElement.nextElementSibling;
+            
             const admin = {
               _id: adminId,
-              fullName: row.querySelector('.admin-name').textContent,
-              username: row.querySelector('.admin-name').nextElementSibling.textContent.replace('@', ''),
+              fullName: adminNameElement.textContent,
+              username: usernameElement.textContent.replace('@', ''),
               email: row.querySelector('.admin-email').textContent
             };
+            
+            console.log('✏️ Editando admin:', admin);
             handlers.handleShowEditAdminModal(admin);
           }
 

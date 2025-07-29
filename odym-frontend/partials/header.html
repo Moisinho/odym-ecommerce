@@ -12,6 +12,9 @@
             <nav class="hidden md:flex space-x-8">
                 <a href="index.html" class="text-gray-700 hover:text-orange-600 font-medium transition duration-300">Inicio</a>
                 <a href="products.html" class="text-gray-700 hover:text-orange-600 font-medium transition duration-300">Productos</a>
+                <a id="premium-nav-link" href="#" class="text-yellow-600 hover:text-orange-600 font-bold transition duration-300 flex items-center premium-modal-trigger" onclick="openPremiumModal()">
+                    <i class="fas fa-crown mr-1"></i>Premium
+                </a>
                 <div class="relative group">
                     <a href="#" class="text-gray-700 hover:text-orange-600 font-medium transition duration-300 flex items-center">
                         Categorías <i class="fas fa-chevron-down ml-1 text-xs"></i>
@@ -51,6 +54,9 @@
         <div id="mobileMenu" class="md:hidden hidden pt-4 pb-2">
             <a href="index.html" class="block py-2 text-gray-700 hover:text-orange-600 font-medium">Inicio</a>
             <a href="products.html" class="block py-2 text-gray-700 hover:text-orange-600 font-medium">Productos</a>
+            <a id="premium-mobile-link" href="#" class="block py-2 text-yellow-600 hover:text-orange-600 font-bold premium-modal-trigger" onclick="openPremiumModal()">
+                <i class="fas fa-crown mr-1"></i>Premium
+            </a>
             <div class="py-2">
                 <button class="flex items-center justify-between w-full text-gray-700 hover:text-orange-600 font-medium" onclick="toggleMobileCategories()">
                     Categorías <i class="fas fa-chevron-down ml-1 text-xs"></i>
