@@ -22,15 +22,22 @@
       },
 
       logout: () => {
-        // Use comprehensive cleanup
+        // Guardar el carrito antes de limpiar credenciales
+        const preservedCart = localStorage.getItem('cart');
+
+        // Limpieza completa de datos de sesión / usuario
         if (window.AuthCleanup) {
           AuthCleanup.cleanupAll();
         } else {
-          // Fallback cleanup
+          // Limpieza manual de claves específicas (NO tocar el carrito)
           localStorage.removeItem("user");
           localStorage.removeItem("admin");
-          localStorage.removeItem("cart");
           sessionStorage.clear();
+        }
+
+        // Restaurar carrito si existía
+        if (preservedCart) {
+          localStorage.setItem('cart', preservedCart);
         }
 
         // Emitir evento de cambio de autenticación

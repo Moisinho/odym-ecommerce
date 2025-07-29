@@ -28,16 +28,24 @@ export const createOrderFromItems = async (userId, items, shippingAddress) => {
     const user = await User.findById(userId);
     if (!user) throw new Error('User not found');
 
-    // Always use user's address for shipping
-    shippingAddress = {
-      firstName: user.name.split(' ')[0] || user.name,
-      lastName: user.name.split(' ').slice(1).join(' ') || '',
-      email: user.email,
-      phone: user.phone || 'No disponible',
-      address: user.address || 'Dirección no especificada',
-      city: 'Ciudad de Panamá',
-      postalCode: '0000',
-      country: 'Panama'
+    // Build shipping address combining request data and user defaults
+    const defaultAddr = user.addresses?.find(a => a.isDefault) || {};
+    const mergedAddress = {
+      firstName:
+        shippingAddress?.firstName ||
+        user.name?.split(' ')[0] ||
+        user.name ||
+        'Cliente',
+      lastName:
+        shippingAddress?.lastName ||
+        user.name?.split(' ').slice(1).join(' ') ||
+        '',
+      email: shippingAddress?.email || user.email,
+      phone: shippingAddress?.phone || user.phone || defaultAddr.phone || '',
+      address: shippingAddress?.address || user.address || defaultAddr.address || '',
+      city: shippingAddress?.city || user.city || defaultAddr.city || 'Ciudad de Panamá',
+      postalCode: shippingAddress?.postalCode || user.postalCode || defaultAddr.postalCode || '0000',
+      country: shippingAddress?.country || 'Panama',
     };
 
     // Validate stock and calculate total
@@ -71,7 +79,7 @@ export const createOrderFromItems = async (userId, items, shippingAddress) => {
       userId,
       items: orderItems,
       totalAmount,
-      shippingAddress
+      shippingAddress: mergedAddress
     });
 
     await order.save();
@@ -120,8 +128,8 @@ export const getUserOrders = async (userId) => {
       if (user) {
         orderObj.shippingAddress = {
           ...orderObj.shippingAddress,
-          firstName: user.name.split(' ')[0] || user.name,
-          lastName: user.name.split(' ').slice(1).join(' ') || '',
+          firstName: user.name?.split(' ')[0] || user.name,
+          lastName: user.name?.split(' ').slice(1).join(' ') || '',
           email: user.email,
           phone: user.phone || 'No disponible',
           address: user.address || 'Dirección no especificada',
@@ -210,8 +218,8 @@ export const createPremiumBoxOrder = async (userId, products, paymentIntentId = 
     if (!user) throw new Error('User not found');
 
     const shippingAddress = {
-      firstName: user.name?.split(' ')[0] || user.fullName?.split(' ')[0] || 'Cliente',
-      lastName: user.name?.split(' ').slice(1).join(' ') || user.fullName?.split(' ').slice(1).join(' ') || '',
+      firstName: user.name?.split(' ')[0] || user.name,
+      lastName: user.name?.split(' ').slice(1).join(' ') || '',
       email: user.email,
       phone: user.phone || '',
       address: user.address || '',

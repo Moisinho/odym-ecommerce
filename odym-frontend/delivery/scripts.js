@@ -241,7 +241,7 @@
         return {
           name:
             order.customerData?.fullName ||
-            order.userId?.fullName ||
+            order.userId?.name ||
             order.shippingAddress?.firstName +
               " " +
               order.shippingAddress?.lastName ||
@@ -320,7 +320,6 @@
                     <span>${item.productId?.name || "Producto"} x${
                         item.quantity
                       }</span>
-                    <span>$${(item.price * item.quantity).toFixed(2)}</span>
                   </div>
                 `
                     )
@@ -502,7 +501,11 @@
             methods.showSuccess("Orden asignada exitosamente");
             // Refresh data
             await methods.loadStats();
+            // Refresh lists
             await methods.loadAvailableOrders();
+            await methods.loadMyOrders();
+            // Switch to "Mis Órdenes" tab so the repartidor sees the newly assigned order
+            methods.switchTab("myOrdersTab");
           } else {
             throw new Error(data.error || "Error al asignar la orden");
           }
@@ -540,6 +543,9 @@
             // Refresh data
             await methods.loadStats();
             await methods.loadMyOrders();
+            // Optionally refresh delivered list and switch tab
+            await methods.loadDeliveredOrders();
+            methods.switchTab("deliveredTab");
           } else {
             throw new Error(
               data.error || "Error al marcar la orden como entregada"

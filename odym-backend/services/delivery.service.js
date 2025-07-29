@@ -8,7 +8,7 @@ export const getAvailableOrders = async () => {
       status: { $in: ['pending', 'processing'] },
       deliveryPersonId: null
     })
-      .populate('userId', 'name email')
+      .populate('userId', 'name email phone address')
       .populate('items.productId', 'name images')
       .sort({ createdAt: -1 });
     
@@ -52,7 +52,7 @@ export const getDeliveryPersonOrders = async (deliveryPersonId) => {
       deliveryPersonId,
       status: 'shipped'
     })
-      .populate('userId', 'name email')
+      .populate('userId', 'name email phone address')
       .populate('items.productId', 'name images')
       .sort({ createdAt: -1 });
     
@@ -105,7 +105,7 @@ export const getDeliveredOrdersThisWeek = async (deliveryPersonId) => {
       status: 'delivered',
       updatedAt: { $gte: startOfWeek, $lte: endOfWeek }
     })
-      .populate('userId', 'name email')
+      .populate('userId', 'name email phone address')
       .populate('items.productId', 'name images')
       .sort({ updatedAt: -1 });
     
@@ -160,7 +160,7 @@ export const assignOrderToDelivery = async (orderId, deliveryPersonId) => {
       },
       { new: true }
     )
-      .populate('userId', 'name email')
+      .populate('userId', 'name email phone address')
       .populate('items.productId', 'name images');
     
     if (!order) {
@@ -188,7 +188,7 @@ export const markOrderAsDelivered = async (orderId, deliveryPersonId) => {
       },
       { new: true }
     )
-      .populate('userId', 'name email')
+      .populate('userId', 'name email phone address')
       .populate('items.productId', 'name images');
     
     if (!order) {
