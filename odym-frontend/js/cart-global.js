@@ -152,7 +152,7 @@ async function proceedToCheckout() {
         body: JSON.stringify(payload),
       }
     );
-
+buyNow
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`HTTP ${response.status}: ${errorText}`);
@@ -195,7 +195,7 @@ async function proceedToCheckout() {
 }
 
 // Función global para compra directa
-async function buyNowFromModal(productId, quantity = 1) {
+async function FromModal(productId, quantity = 1) {
   try {
     const productResponse = await fetch(
       `${API_BASE_URL}/products/${productId}`
